@@ -30,8 +30,8 @@ dist/
 .vscode
 .env
 __debug_bin
-docker-compose.yml
-docker-compose.yaml
+docker-compose.override.yml
+docker-compose.override.yaml
 coverage*.out
 coverage*.txt
 coverage*.xml
