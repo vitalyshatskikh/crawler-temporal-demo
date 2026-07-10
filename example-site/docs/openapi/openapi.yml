@@ -1,0 +1,276 @@
+openapi: 3.0.2
+info:
+  title: External Site API
+  version: 1.0.0
+  description: Example website API for crawling demo
+paths:
+  /ping:
+    get:
+      summary: Health check endpoint
+      tags:
+        - Health
+      description: Simple healthcheck to verify the API is running
+      operationId: ping
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingResponse'
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /adverts/{region}/search:
+    get:
+      summary: Search adverts
+      tags:
+        - Adverts
+      description: List adverts with pagination support
+      operationId: searchAdverts
+      parameters:
+        - name: region
+          in: path
+          description: Geographic region for the search
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number (starts from 1)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: size
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+        - name: olderFirst
+          in: query
+          description: Sort oldest first instead of newest first
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Successful search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /adverts/{region}/adverts/{id}:
+    get:
+      summary: Get advert details
+      tags:
+        - Adverts
+      description: Retrieve detailed information about a specific advert
+      operationId: getAdvert
+      parameters:
+        - name: region
+          in: path
+          description: Geographic region
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Advert identifier
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Advert found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvertDetail'
+        '404':
+          description: Advert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      summary: Add or update an advert
+      tags:
+        - Adverts
+      description: Create a new advert or update an existing one
+      operationId: upsertAdvert
+      parameters:
+        - name: region
+          in: path
+          description: Geographic region
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Advert identifier
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdvertDetail'
+      responses:
+        '200':
+          description: Advert updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvertDetail'
+        '201':
+          description: Advert created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvertDetail'
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      summary: Delete an advert
+      tags:
+        - Adverts
+      description: Remove an advert by its identifier
+      operationId: deleteAdvert
+      parameters:
+        - name: region
+          in: path
+          description: Geographic region
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Advert identifier
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Advert deleted
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    PingResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+    AdvertListItem:
+      type: object
+      required:
+        - id
+        - title
+        - url
+      properties:
+        id:
+          type: string
+          description: Unique advert identifier
+          example: "100500"
+        title:
+          type: string
+          description: Advert title
+          example: "Vintage Camera Collection"
+        url:
+          type: string
+          description: Relative URL to the advert
+          example: "/adverts/100500"
+    SearchResponse:
+      type: object
+      required:
+        - page
+        - total
+        - adverts
+      properties:
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        total:
+          type: integer
+          description: Total number of adverts
+          example: 1000
+        nextPage:
+          type: string
+          nullable: true
+          description: URL to next page or null if last page
+          example: "/adverts/us/search?page=2&size=10"
+        adverts:
+          type: array
+          description: List of adverts on current page
+          items:
+            $ref: '#/components/schemas/AdvertListItem'
+    AdvertDetail:
+      type: object
+      required:
+        - title
+        - description
+        - price
+        - pubDate
+      properties:
+        title:
+          type: string
+          description: Advert title
+          example: "Vintage Camera Collection"
+        description:
+          type: string
+          description: Detailed description of the advert
+          example: "Complete collection of vintage cameras from the 1950s-1970s. All in working condition."
+        price:
+          type: integer
+          description: Price in cents
+          example: 50000
+        pubDate:
+          type: string
+          format: date-time
+          description: Publication date in RFC3339 format
+          example: "2024-01-15T10:30:00Z"
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Advert not found"
+        detail:
+          type: object
+          description: Error details
+          additionalProperties:
+            type: string

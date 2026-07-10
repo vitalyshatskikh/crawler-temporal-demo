@@ -4,18 +4,18 @@ setup-dev:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
 
-.PHONY: external-site-fmt external-site-lint external-site-test-unit external-site-qa
+.PHONY: example-site-fmt example-site-lint example-site-test-unit example-site-qa
 
-external-site-generate:
-	cd external-site && go generate ./...
+example-site-generate:
+	cd example-site && go generate ./...
 
-external-site-fmt:
-	cd external-site && go fmt ./... && go fix ./...
+example-site-fmt:
+	cd example-site && go fmt ./... && go fix ./...
 
-external-site-lint:
-	cd external-site && golangci-lint run ./...
+example-site-lint:
+	cd example-site && golangci-lint run ./...
 
-external-site-test-unit:
-	cd external-site && go test -v -race ./...
+example-site-test-unit:
+	cd example-site && go tool gotestsum -- -v -race -coverprofile=coverage.out ./...
 
-external-site-qa: external-site-fmt external-site-lint external-site-test-unit
+example-site-qa: example-site-fmt example-site-lint example-site-test-unit
