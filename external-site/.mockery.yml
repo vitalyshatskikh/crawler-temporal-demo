@@ -1,0 +1,9 @@
+---
+all: false
+dir: "{{.InterfaceDir}}/mocks"
+filename: "mock_{{.InterfaceName | snakecase}}.go"
+formatter: goimports
+packages:
+  github.com/vitalyshatskikh/crawler-temporal-demo/external-site/internal/domain:
+    interfaces:
+      AdvertsRepository:
