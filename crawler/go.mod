@@ -1,10 +1,11 @@
 module github.com/vitalyshatskikh/crawler-temporal-demo/crawler
 
-go 1.25.0
+go 1.26.2
 
 require (
 	github.com/cbroglie/mustache v1.4.0
 	github.com/go-faker/faker/v4 v4.7.0
+	github.com/go-playground/validator/v10 v10.30.2
 	github.com/stretchr/testify v1.11.1
 	go.temporal.io/api v1.62.11
 	go.temporal.io/sdk v1.43.0
@@ -19,7 +20,6 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.30.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
