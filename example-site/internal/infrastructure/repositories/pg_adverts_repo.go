@@ -44,7 +44,7 @@ func (r PGAdvertsRepo) GetAdvert(ctx context.Context, id domain.AdvertIdentity) 
 	sql, args, err := psql.
 		Select(&AdvertRecord{}).
 		From(advertsTable).
-		Where(goqu.Ex{"region": id.Region, "id": id.ID}).
+		Where(goqu.Ex{"region": id.Region, "id": id.ID, "deleted_at": nil}).
 		ToSQL()
 	if err != nil {
 		return domain.Advert{}, fmt.Errorf("cannot create sql: %w", err)
@@ -69,7 +69,13 @@ func (r PGAdvertsRepo) GetAdvert(ctx context.Context, id domain.AdvertIdentity) 
 		return domain.Advert{}, fmt.Errorf("cannot fetch row: %w", err)
 	}
 
-	return domain.Advert(advertRecord), nil
+	return domain.Advert{
+		AdvertIdentity: advertRecord.AdvertIdentity,
+		Title:          advertRecord.Title,
+		Description:    advertRecord.Description,
+		Price:          advertRecord.Price,
+		PubDate:        advertRecord.PubDate,
+	}, nil
 }
 
 func (r PGAdvertsRepo) SearchAdverts(ctx context.Context, params domain.AdvertSearchParams) (domain.AdvertSearchResult, error) {
@@ -85,7 +91,7 @@ func (r PGAdvertsRepo) SearchAdverts(ctx context.Context, params domain.AdvertSe
 			goqu.L("COUNT(*) OVER()").As("total_count"),
 		).
 		From(advertsTable).
-		Where(goqu.Ex{"region": params.Region}).
+		Where(goqu.Ex{"region": params.Region, "deleted_at": nil}).
 		Order(goqu.C("pub_date").Desc()).
 		Limit(uint(params.PageSize)).
 		Offset(uint((params.PageNum - 1) * params.PageSize)).
@@ -108,7 +114,13 @@ func (r PGAdvertsRepo) SearchAdverts(ctx context.Context, params domain.AdvertSe
 	adverts := make([]domain.Advert, len(records))
 	var total int
 	for i, rec := range records {
-		adverts[i] = domain.Advert(rec.AdvertRecord)
+		adverts[i] = domain.Advert{
+			AdvertIdentity: rec.AdvertIdentity,
+			Title:          rec.Title,
+			Description:    rec.Description,
+			Price:          rec.Price,
+			PubDate:        rec.PubDate,
+		}
 		total = rec.TotalCount
 	}
 
@@ -166,7 +178,8 @@ func (r PGAdvertsRepo) UpsertAdvert(ctx context.Context, advert domain.Advert) (
 
 func (r PGAdvertsRepo) DeleteAdvert(ctx context.Context, id domain.AdvertIdentity) error {
 	sql, args, err := psql.
-		Delete(advertsTable).
+		Update(advertsTable).
+		Set(goqu.Record{"deleted_at": time.Now()}).
 		Where(goqu.Ex{"region": id.Region, "id": id.ID}).
 		ToSQL()
 	if err != nil {
@@ -181,7 +194,30 @@ func (r PGAdvertsRepo) DeleteAdvert(ctx context.Context, id domain.AdvertIdentit
 
 	_, err = conn.Exec(ctx, sql, args...)
 	if err != nil {
-		return fmt.Errorf("cannot delete row: %w", err)
+		return fmt.Errorf("cannot update row: %w", err)
+	}
+	return nil
+}
+
+func (r PGAdvertsRepo) CleanupDeletedAdverts(ctx context.Context, olderThan time.Duration) error {
+	cutoff := time.Now().Add(-olderThan)
+	sql, args, err := psql.
+		Delete(advertsTable).
+		Where(goqu.C("deleted_at").Lt(cutoff)).
+		ToSQL()
+	if err != nil {
+		return fmt.Errorf("cannot create sql: %w", err)
+	}
+
+	conn, err := r.dbPool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot acquire connection: %w", err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("cannot delete rows: %w", err)
 	}
 	return nil
 }

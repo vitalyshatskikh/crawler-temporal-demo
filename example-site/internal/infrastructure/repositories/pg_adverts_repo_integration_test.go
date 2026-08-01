@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
@@ -37,6 +38,26 @@ func insertAdvert(t *testing.T, pool *pgxpool.Pool, advert domain.Advert) {
 		advert.Description, advert.Price, advert.PubDate,
 	)
 	require.NoError(t, err)
+}
+
+func insertDeletedAdvert(t *testing.T, pool *pgxpool.Pool, advert domain.Advert, deletedAt time.Time) {
+	t.Helper()
+	_, err := pool.Exec(context.Background(),
+		`INSERT INTO adverts (id, region, title, description, price, pub_date, version, deleted_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, 0, $7)`,
+		advert.ID, advert.Region, advert.Title,
+		advert.Description, advert.Price, advert.PubDate, deletedAt,
+	)
+	require.NoError(t, err)
+}
+
+func getDeletedAdvert(ctx context.Context, pool *pgxpool.Pool, id domain.AdvertIdentity) (time.Time, error) {
+	var deletedAt time.Time
+	err := pool.QueryRow(ctx,
+		`SELECT deleted_at FROM adverts WHERE region = $1 AND id = $2`,
+		id.Region, id.ID,
+	).Scan(&deletedAt)
+	return deletedAt, err
 }
 
 func TestPGAdvertsRepo_GetAdvert_WhenFound_ThenReturnsAdvert(t *testing.T) {
@@ -182,6 +203,71 @@ func TestPGAdvertsRepo_DeleteAdvert_WhenNotExisting_ThenNoError(t *testing.T) {
 	id := domaintest.AdvertIdentityFactory("")
 
 	err := repo.DeleteAdvert(context.Background(), id)
+
+	assert.NoError(t, err)
+}
+
+func TestPGAdvertsRepo_CleanupDeletedAdverts_WhenOldAdverts_ThenDeletes(t *testing.T) {
+	pool := testutil.TestPool
+	repo := repositories.NewPGAdvertsRepo(pool)
+
+	advert := domaintest.AdvertFactory("")
+	oldDeletedAt := time.Now().Add(-2 * time.Hour)
+	insertDeletedAdvert(t, pool, advert, oldDeletedAt)
+
+	err := repo.CleanupDeletedAdverts(context.Background(), time.Hour)
+
+	require.NoError(t, err)
+
+	_, err = repo.GetAdvert(context.Background(), advert.AdvertIdentity)
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestPGAdvertsRepo_CleanupDeletedAdverts_WhenRecentAdverts_ThenRetains(t *testing.T) {
+	pool := testutil.TestPool
+	repo := repositories.NewPGAdvertsRepo(pool)
+
+	advert := domaintest.AdvertFactory("")
+	recentDeletedAt := time.Now()
+	insertDeletedAdvert(t, pool, advert, recentDeletedAt)
+
+	err := repo.CleanupDeletedAdverts(context.Background(), time.Hour)
+
+	require.NoError(t, err)
+
+	deletedAt, err := getDeletedAdvert(context.Background(), pool, advert.AdvertIdentity)
+	require.NoError(t, err)
+	assert.NotZero(t, deletedAt)
+}
+
+func TestPGAdvertsRepo_CleanupDeletedAdverts_WhenMixedAges_ThenDeletesOnlyOld(t *testing.T) {
+	pool := testutil.TestPool
+	repo := repositories.NewPGAdvertsRepo(pool)
+
+	oldAdvert := domaintest.AdvertFactory("")
+	oldDeletedAt := time.Now().Add(-2 * time.Hour)
+	insertDeletedAdvert(t, pool, oldAdvert, oldDeletedAt)
+
+	recentAdvert := domaintest.AdvertFactory("")
+	recentDeletedAt := time.Now()
+	insertDeletedAdvert(t, pool, recentAdvert, recentDeletedAt)
+
+	err := repo.CleanupDeletedAdverts(context.Background(), time.Hour)
+	require.NoError(t, err)
+
+	_, err = repo.GetAdvert(context.Background(), oldAdvert.AdvertIdentity)
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+
+	deletedAt, err := getDeletedAdvert(context.Background(), pool, recentAdvert.AdvertIdentity)
+	require.NoError(t, err)
+	assert.NotZero(t, deletedAt)
+}
+
+func TestPGAdvertsRepo_CleanupDeletedAdverts_WhenEmptyOrNoneDeleted_ThenNoError(t *testing.T) {
+	pool := testutil.TestPool
+	repo := repositories.NewPGAdvertsRepo(pool)
+
+	err := repo.CleanupDeletedAdverts(context.Background(), time.Hour)
 
 	assert.NoError(t, err)
 }

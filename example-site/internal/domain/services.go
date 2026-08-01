@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 type AdvertsCRUDService struct {
@@ -42,4 +43,8 @@ func (s *AdvertsCRUDService) DeleteAdvert(ctx context.Context, id AdvertIdentity
 		return err
 	}
 	return s.repo.DeleteAdvert(ctx, id)
+}
+
+func (s *AdvertsCRUDService) CleanupDeletedAdverts(ctx context.Context, olderThan time.Duration) error {
+	return s.repo.CleanupDeletedAdverts(ctx, olderThan)
 }
