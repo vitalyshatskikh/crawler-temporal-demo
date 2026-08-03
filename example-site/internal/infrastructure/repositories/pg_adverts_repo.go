@@ -85,17 +85,23 @@ func (r PGAdvertsRepo) SearchAdverts(ctx context.Context, params domain.AdvertSe
 	}
 	defer conn.Release()
 
-	sql, args, err := psql.
+	advSelect := psql.
 		Select(
 			"id", "region", "title", "description", "price", "pub_date",
 			goqu.L("COUNT(*) OVER()").As("total_count"),
 		).
 		From(advertsTable).
 		Where(goqu.Ex{"region": params.Region, "deleted_at": nil}).
-		Order(goqu.C("pub_date").Desc()).
 		Limit(uint(params.PageSize)).
-		Offset(uint((params.PageNum - 1) * params.PageSize)).
-		ToSQL()
+		Offset(uint((params.PageNum - 1) * params.PageSize))
+
+	if params.OlderFirst {
+		advSelect = advSelect.Order(goqu.C("pub_date").Asc())
+	} else {
+		advSelect = advSelect.Order(goqu.C("pub_date").Desc())
+	}
+
+	sql, args, err := advSelect.ToSQL()
 	if err != nil {
 		return domain.AdvertSearchResult{}, fmt.Errorf("cannot create sql: %w", err)
 	}

@@ -16,9 +16,10 @@ type Advert struct {
 }
 
 type AdvertSearchParams struct {
-	Region   string `validate:"required"`
-	PageSize int    `validate:"gte=1,lte=100"`
-	PageNum  int    `validate:"gte=1"`
+	Region     string `validate:"required"`
+	PageSize   int    `validate:"gte=1,lte=100"`
+	PageNum    int    `validate:"gte=1"`
+	OlderFirst bool   `json:"olderFirst"`
 }
 
 type AdvertSearchResult struct {
