@@ -28,11 +28,9 @@ example-site-test-integration:
 
 example-site-qa: example-site-fmt example-site-lint example-site-test-unit example-site-test-integration
 
-.PHONY: example-site-run
-example-site-run: export POSTGRES_HOSTS=localhost:5433
-example-site-run: export API_PORT=8090
-example-site-run: export METRICS_PORT=8091
-example-site-run:
-	cd example-site \
-		&& $(DOCKER_COMPOSE) up -d --wait postgres \
-		&& go run ./cmd/siteapi/main.go
+.PHONY: example-site example-site-down
+example-site:
+	cd example-site && $(DOCKER_COMPOSE) up -d --build && $(DOCKER_COMPOSE) ps
+
+example-site-down:
+	cd example-site && $(DOCKER_COMPOSE) down -v
