@@ -1,0 +1,6 @@
+.git
+*_test.go
+coverage.out
+coverage-int.out
+bin/
+cmd/*/main_test.go

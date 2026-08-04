@@ -15,8 +15,8 @@ This file provides guidance to agents when working with code in this repository.
 
 ### Build
 - `go build ./...` - Build all packages
-- `go build -o bin/app ./cmd/app` - Build specific application
-- `go install ./cmd/app` - Install application to $GOPATH/bin
+- `go build -o bin/app ./cmd/siteapi` - Build specific application
+- `go install ./cmd/siteapi` - Install application to $GOPATH/bin
 - `go mod tidy` - Clean up module dependencies
 - `go mod download` - Download module dependencies
 
@@ -176,13 +176,13 @@ func TestCalculateTotal_WhenValidNumbersThenExpectedTotal(t *testing.T) {
 - Write meaningful Godoc comments
 
 ## Package Organization
-- `cmd/` - Application entry points (main packages)
+- `cmd/siteapi/` - API server entry point
 - `internal/` - Private application code
-- `internal/config/` - Configuration management
-- `internal/sample_feature/` - Example feature implementation
-- `internal/shared/` - Shared utilities and common code
-- `tests/e2e/` - End-to-end tests
+- `internal/domain/` - Domain models, errors, services, repository interfaces
+- `internal/application/adverts/` - ogen-generated HTTP layer, handlers, and router
+- `internal/infrastructure/repositories/` - PostgreSQL repository implementations
 - `migrations/` - Database migration files
+- `docs/openapi/` - OpenAPI specification
 
 ## Development Workflow
 1. Run `go mod tidy` after adding dependencies

@@ -36,6 +36,9 @@ coverage*.out
 coverage*.txt
 coverage*.xml
 coverage*.json
+# agentic
+**/docs/.superpowers/**/*
+**/docs/superpowers/**/*
 
 ### My application specific ###
 status.json

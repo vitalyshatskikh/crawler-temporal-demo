@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ogen-go/ogen/main/schemas/ogen.jsonschema.json
+
+generator:
+  features:
+    enable:
+      - paths/server
+      - ogen/unimplemented
+    disable_all: true
+
+  convenient_errors: on
+
+  filters:
+    path_regex: "/adverts/*"
+

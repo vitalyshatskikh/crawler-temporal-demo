@@ -1,0 +1,149 @@
+x-common-env: &common_env
+  POSTGRES_HOSTS: postgres:5432
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DATABASE: example-site
+  POSTGRES_SSLMODE: disable
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: example-site
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+    networks:
+      - example-site-network
+
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: example-site:latest
+    restart: no
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - example-site-network
+    command: ["/bin/migrator"]
+    environment:
+      <<: *common_env
+
+  siteapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: example-site:latest
+    restart: unless-stopped
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    networks:
+      - example-site-network
+    ports:
+      - "8090:8080"
+    command: ["/bin/siteapi"]
+    environment:
+      <<: *common_env
+      HTTP_PORT: 8080
+
+  sitejob:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: example-site:latest
+    restart: unless-stopped
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    networks:
+      - example-site-network
+    command: ["/bin/sitejob"]
+    environment:
+      <<: *common_env
+
+  seller-moscow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: example-site:latest
+    restart: unless-stopped
+    depends_on:
+      siteapi:
+        condition: service_started
+    networks:
+      - example-site-network
+    command: ["/bin/seller"]
+    environment:
+      <<: *common_env
+      BASE_URL: http://siteapi:8080
+      SELLER_REGION: moscow
+      SELLER_CREATE_RPS: 3
+      SELLER_DELETE_AGE: 1h
+      SELLER_DELETE_JITTER: 15m
+      SELLER_DELETE_INTERVAL: 5m
+      SELLER_DELETE_BATCH_SIZE: 1000
+
+  seller-new-york:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: example-site:latest
+    restart: unless-stopped
+    depends_on:
+      siteapi:
+        condition: service_started
+    networks:
+      - example-site-network
+    command: ["/bin/seller"]
+    environment:
+      <<: *common_env
+      BASE_URL: http://siteapi:8080
+      SELLER_REGION: new-york
+      SELLER_CREATE_RPS: 3
+      SELLER_DELETE_AGE: 1h
+      SELLER_DELETE_JITTER: 15m
+      SELLER_DELETE_INTERVAL: 5m
+      SELLER_DELETE_BATCH_SIZE: 1000
+
+  seller-pekin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: example-site:latest
+    restart: unless-stopped
+    depends_on:
+      siteapi:
+        condition: service_started
+    networks:
+      - example-site-network
+    command: ["/bin/seller"]
+    environment:
+      <<: *common_env
+      BASE_URL: http://siteapi:8080
+      SELLER_REGION: pekin
+      SELLER_CREATE_RPS: 3
+      SELLER_DELETE_AGE: 1h
+      SELLER_DELETE_JITTER: 15m
+      SELLER_DELETE_INTERVAL: 5m
+      SELLER_DELETE_BATCH_SIZE: 1000
+
+networks:
+  example-site-network:
+    driver: bridge
+    name: example-site-network
+
+volumes:
+  postgres-data:

@@ -1,21 +1,36 @@
+DOCKER_COMPOSE := $(shell command -v docker-compose 2>/dev/null || echo 'docker compose')
+
 .PHONY: setup-dev
 
 setup-dev:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
-	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
+	go install tool
 
-.PHONY: external-site-fmt external-site-lint external-site-test-unit external-site-qa
+.PHONY: example-site-fmt example-site-lint example-site-test-unit example-site-test-integration example-site-qa
 
-external-site-generate:
-	cd external-site && go generate ./...
+example-site-generate:
+	cd example-site && go generate ./...
 
-external-site-fmt:
-	cd external-site && go fmt ./... && go fix ./...
+example-site-fmt:
+	cd example-site && go fmt ./... && go fix ./...
 
-external-site-lint:
-	cd external-site && golangci-lint run ./...
+example-site-lint:
+	cd example-site && golangci-lint run ./...
 
-external-site-test-unit:
-	cd external-site && go test -v -race ./...
+example-site-test-unit:
+	cd example-site && go tool gotestsum -- -v -race -coverprofile=coverage.out ./...
 
-external-site-qa: external-site-fmt external-site-lint external-site-test-unit
+example-site-test-integration: export POSTGRES_HOSTS=localhost:5433
+example-site-test-integration:
+	cd example-site \
+		&& $(DOCKER_COMPOSE) up -d --wait postgres \
+		&& go tool gotestsum -- -tags=integration -v -race -coverprofile=coverage-int.out ./internal/infrastructure/repositories/...
+
+example-site-qa: example-site-fmt example-site-lint example-site-test-unit example-site-test-integration
+
+.PHONY: example-site example-site-down
+example-site:
+	cd example-site && $(DOCKER_COMPOSE) up -d --build && $(DOCKER_COMPOSE) ps
+
+example-site-down:
+	cd example-site && $(DOCKER_COMPOSE) down -v
