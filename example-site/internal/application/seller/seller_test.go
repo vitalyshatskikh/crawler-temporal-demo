@@ -62,7 +62,6 @@ func TestTryDeleteAdverts_WhenSuccessful_ThenSendsSearchAndDeleteRequests(t *tes
 	var (
 		mu      sync.Mutex
 		records []RecordedRequest
-		callNum int
 	)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -75,15 +74,25 @@ func TestTryDeleteAdverts_WhenSuccessful_ThenSendsSearchAndDeleteRequests(t *tes
 			URL:    r.URL.String(),
 			Body:   body,
 		})
-		callNum++
 
 		switch r.Method {
 		case http.MethodGet:
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"page":1,"total":1,"nextPage":null,"adverts":[{"id":"adv1","title":"Test Ad","url":"/adverts/test-region/adverts/adv1"}]}`))
+			switch r.URL.Path {
+			case "/adverts/test-region/adverts/adv1":
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"title":"Test","description":"Test desc","price":100,"pubDate":"1970-01-01T00:00:00Z"}`))
+			case "/adverts/test-region/search":
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"page":1,"total":1,"nextPage":null,"adverts":[{"id":"adv1","title":"Test Ad","url":"/adverts/test-region/adverts/adv1"}]}`))
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+
 		case http.MethodDelete:
 			w.WriteHeader(http.StatusNoContent)
+
 		default:
 			w.WriteHeader(http.StatusNotImplemented)
 		}
@@ -99,12 +108,15 @@ func TestTryDeleteAdverts_WhenSuccessful_ThenSendsSearchAndDeleteRequests(t *tes
 	mu.Lock()
 	defer mu.Unlock()
 
-	require.Len(t, records, 2)
+	require.Len(t, records, 3)
 	assert.Equal(t, http.MethodGet, records[0].Method)
 	assert.Contains(t, records[0].URL, "/adverts/test-region/search")
 
-	assert.Equal(t, http.MethodDelete, records[1].Method)
-	assert.Contains(t, records[1].URL, "/adverts/test-region/adverts/")
+	assert.Equal(t, http.MethodGet, records[1].Method)
+	assert.Contains(t, records[1].URL, "/adverts/test-region/adverts/adv1")
+
+	assert.Equal(t, http.MethodDelete, records[2].Method)
+	assert.Contains(t, records[2].URL, "/adverts/test-region/adverts/adv1")
 }
 
 type RecordedRequest struct {
