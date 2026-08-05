@@ -5,6 +5,21 @@ DOCKER_COMPOSE := $(shell command -v docker-compose 2>/dev/null || echo 'docker 
 setup-dev:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 	go install tool
+	(cd crawler && poetry sync)
+
+# ----------
+# Infra
+
+.PHONY: infra infra-down
+
+infra:
+	cd infra/docker && $(DOCKER_COMPOSE) up -d && $(DOCKER_COMPOSE) ps
+
+infra-down:
+	cd infra/docker && $(DOCKER_COMPOSE) down -v
+
+# ----------
+# Example site
 
 .PHONY: example-site-fmt example-site-lint example-site-test-unit example-site-test-integration example-site-qa
 
@@ -34,3 +49,21 @@ example-site:
 
 example-site-down:
 	cd example-site && $(DOCKER_COMPOSE) down -v
+
+# ----------
+# Surfer (and downloader)
+
+.PHONY: crawler-py-fmt crawler-py-lint crawler-py-test-unit
+
+crawler-py-fmt:
+	cd crawler && poetry run ruff check --fix .
+
+crawler-py-lint:
+	cd crawler && poetry run pytest -m linting -v
+
+crawler-py-test-unit:
+	cd crawler && poetry run pytest -m 'not linting and not integration' -v
+
+crawler-py-qa: crawler-py-lint crawler-py-test-unit
+
+# ----------
