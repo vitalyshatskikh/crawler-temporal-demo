@@ -36,5 +36,5 @@ def test_ruff() -> None:
 
 @pytest.mark.linting
 def test_mypy() -> None:
-    cmd = ["python", "-m", "mypy", "surfer"]
+    cmd = ["python", "-m", "mypy", "surfer", "downloader"]
     run_linter("mypy", cmd)
