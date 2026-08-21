@@ -39,6 +39,10 @@ func (c *AdvertsCleaner) Run(ctx context.Context) {
 			c.logger.Info("cleanup stopped")
 			return
 		case <-ticker.C:
+			c.logger.Info(
+				"running cleanup for adverts",
+				zap.Time("older_than", time.Now().Add(-c.cfg.CleanupDuration)),
+			)
 			err := c.advertService.CleanupDeletedAdverts(ctx, c.cfg.CleanupDuration)
 			if err != nil {
 				c.logger.Error("failed to cleanup deleted adverts", zap.Error(err))

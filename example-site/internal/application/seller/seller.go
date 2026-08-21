@@ -115,7 +115,6 @@ func (s *Seller) TryCreateAdvert(ctx context.Context) error {
 
 func (s *Seller) TryDeleteAdverts(ctx context.Context) error {
 	jitterOffset := time.Duration(rand.Int63n(int64(s.cfg.DeleteJitter)))
-	_ = jitterOffset
 
 	pageNum := 1
 	totalDeleted := 0
@@ -140,16 +139,32 @@ func (s *Seller) TryDeleteAdverts(ctx context.Context) error {
 			if totalDeleted >= s.cfg.DeleteBatchSize {
 				return nil
 			}
-			err := s.siteClient.DeleteAdvert(ctx, gen.DeleteAdvertParams{Region: s.cfg.Region, ID: adv.URL})
+
+			advDetail, err := s.siteClient.GetAdvert(ctx, gen.GetAdvertParams{Region: s.cfg.Region, ID: adv.ID})
 			if err != nil {
 				s.logger.Error(
-					"failed to delete advert",
+					"failed to get advert details (to delete)",
 					zap.String("region", s.cfg.Region),
 					zap.String("id", adv.ID),
 					zap.Error(err),
 				)
-				return err
+				continue
 			}
+
+			advAge := time.Since(advDetail.(*gen.AdvertDetail).PubDate)
+			if advAge > s.cfg.DeleteAge+jitterOffset {
+				err = s.siteClient.DeleteAdvert(ctx, gen.DeleteAdvertParams{Region: s.cfg.Region, ID: adv.ID})
+				if err != nil {
+					s.logger.Error(
+						"failed to delete advert",
+						zap.String("region", s.cfg.Region),
+						zap.String("id", adv.ID),
+						zap.Error(err),
+					)
+					continue
+				}
+			}
+
 			totalDeleted++
 		}
 
