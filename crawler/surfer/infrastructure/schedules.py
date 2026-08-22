@@ -1,5 +1,5 @@
-
 import temporalio.client
+import temporalio.service
 
 from surfer.application import config, consts, workflows
 
@@ -26,7 +26,11 @@ async def setup_surfing(
         )
 
         existing_schedule = client.get_schedule_handle(sc_id)
-        await existing_schedule.delete()
+        try:
+            await existing_schedule.delete()
+        except temporalio.service.RPCError as err:
+            if err.status != temporalio.service.RPCStatusCode.NOT_FOUND:
+                raise
 
         await client.create_schedule(
             id=sc_id,

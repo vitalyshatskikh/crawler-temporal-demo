@@ -32,7 +32,7 @@ class ProcessSearchPage:
 
         download_wf_id = (
             f"{consts.WorkflowName.DOWNLOAD_SEARCH_PAGE}/{in_.surf_params.name}"
-            f"/branch{in_.branch_idx}_page{in_.page_num}"
+            f"/branch{in_.branch_idx}/page{in_.page_num}"
         )
         now = workflow.now()
         page_doc_meta = adverts.DocumentMeta(

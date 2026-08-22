@@ -67,3 +67,17 @@ crawler-py-test-unit:
 crawler-py-qa: crawler-py-lint crawler-py-test-unit
 
 # ----------
+# Surfer
+
+.PHONY: run-surfer
+
+run-surfer:
+	cd crawler && poetry run python surfer
+
+# ----------
+# Surfer
+
+.PHONY: run-downloader
+
+run-downloader:
+	cd crawler && poetry run python downloader

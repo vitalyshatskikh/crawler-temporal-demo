@@ -10,7 +10,7 @@ services:
     image: postgres:18-alpine
     restart: unless-stopped
     ports:
-      - "5433:5432"
+      - "5533:5432"
     environment:
       POSTGRES_DB: example-site
       POSTGRES_PASSWORD: postgres

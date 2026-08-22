@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+import sys
 
 import aiohttp
 import temporalio.client
@@ -55,4 +56,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        sys.exit(1)

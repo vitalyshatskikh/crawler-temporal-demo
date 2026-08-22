@@ -6,7 +6,6 @@ import pytest
 import temporalio.client
 from faker import Faker
 
-from downloader.tests._factories import DownloaderDocMetaFactory
 from surfer.application.config import SurferConfig
 from surfer.application.workflows import models as wf_models
 from surfer.application.workflows.process_advert import ProcessAdvertIn
@@ -147,4 +146,4 @@ class DownloadInFactory(factory.Factory):
     class Meta:
         model = wf_models.DownloadIn
 
-    meta = factory.SubFactory(DownloaderDocMetaFactory)
+    meta = factory.SubFactory(DocMetaFactory)
