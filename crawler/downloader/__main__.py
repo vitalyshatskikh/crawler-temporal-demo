@@ -10,6 +10,7 @@ from temporalio.contrib.pydantic import pydantic_data_converter
 from downloader.application import config as downloader_config
 from downloader.infrastructure import repositories, workers
 from shared.py import observability, settings
+from shared.py.db import engine as db_engine
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +42,11 @@ async def main() -> None:
         connector_owner=True,
     )
 
-    downloading_repo = repositories.PGDownloadingRepository()
-    document_repo = repositories.PGDocumentRepository()
+    engine = db_engine.make_engine(app_config.postgres)
+    sessionmaker = db_engine.make_sessionmaker(engine)
+
+    downloading_repo = repositories.PGDownloadingRepository(sessionmaker)
+    document_repo = repositories.PGDocumentRepository(sessionmaker)
 
     w = workers.DownloadingWorker(
         client=client,

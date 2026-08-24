@@ -7,6 +7,8 @@ import pydantic
 import pydantic_settings
 from temporalio import common
 
+from shared.py.db import settings as db_settings
+
 
 class Config(pydantic_settings.BaseSettings):
     model_config = pydantic_settings.SettingsConfigDict(
@@ -28,6 +30,8 @@ class Config(pydantic_settings.BaseSettings):
 
     temporal_host: str = pydantic.Field("localhost:7233")
     temporal_namespace: str = pydantic.Field("crawler")
+
+    postgres: db_settings.PGConfig = db_settings.PGConfig()
 
 
 class RetryConfig(pydantic.BaseModel):

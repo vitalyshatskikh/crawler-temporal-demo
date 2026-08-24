@@ -25,3 +25,45 @@ services:
       start_period: 30s
     networks:
       - crawler-network
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    image: crawler-migrate:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: *common_env
+    networks: [crawler-network]
+    restart: "no"
+
+  surfer:
+    image: crawler-surfer:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment: *common_env
+    networks: [crawler-network]
+    restart: unless-stopped
+
+  downloader:
+    image: crawler-downloader:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment: *common_env
+    networks: [crawler-network]
+    restart: unless-stopped
+
+networks:
+  crawler-network:
+    driver: bridge
+    name: crawler-network
+
+volumes:
+  postgres-data:

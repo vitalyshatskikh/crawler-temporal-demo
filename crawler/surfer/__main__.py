@@ -1,12 +1,12 @@
 import asyncio
 import logging
-import sys
 
 import temporalio.client
 import temporalio.worker
 from temporalio.contrib.pydantic import pydantic_data_converter
 
 from shared.py import observability, settings
+from shared.py.db import engine as db_engine
 from surfer.application import config
 from surfer.infrastructure import repositories, schedules, workers
 
@@ -29,8 +29,11 @@ async def main() -> None:
         data_converter=pydantic_data_converter,
     )
 
-    surf_config_repo = repositories.PGConfigRepository()
-    adverts_repo = repositories.PGAdvertsRepo()
+    engine = db_engine.make_engine(app_config.postgres)
+    sessionmaker = db_engine.make_sessionmaker(engine)
+
+    surf_config_repo = repositories.PGConfigRepository(sessionmaker)
+    adverts_repo = repositories.PGAdvertsRepo(sessionmaker)
 
     schedules_conf = await surf_config_repo.get_surf_schedules()
     await schedules.setup_surfing(client, app_config.surfer, schedules_conf)
@@ -51,6 +54,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    import sys
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

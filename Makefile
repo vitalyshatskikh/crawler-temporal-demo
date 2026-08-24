@@ -53,7 +53,7 @@ example-site-down:
 # ----------
 # Surfer (and downloader)
 
-.PHONY: crawler-py-fmt crawler-py-lint crawler-py-test-unit
+.PHONY: crawler-py-fmt crawler-py-lint crawler-py-test-unit crawler-py-test-integration
 
 crawler-py-fmt:
 	cd crawler && poetry run ruff check --fix .
@@ -62,9 +62,35 @@ crawler-py-lint:
 	cd crawler && poetry run pytest -m linting -v
 
 crawler-py-test-unit:
-	cd crawler && poetry run pytest -m 'not linting and not integration' -v
+	cd crawler && poetry run pytest \
+		--cov=shared --cov=surfer --cov=downloader \
+		--cov-report=xml:coverage-py.xml \
+		-m 'not linting and not integration' -v
 
-crawler-py-qa: crawler-py-lint crawler-py-test-unit
+crawler-py-test-integration: export POSTGRES__HOSTS=localhost:5534
+crawler-py-test-integration:
+	cd crawler \
+		&& $(DOCKER_COMPOSE) up -d --wait postgres \
+		&& poetry run pytest \
+			--cov=shared --cov=surfer --cov=downloader \
+			--cov-report=xml:coverage-py-int.xml \
+			-m 'integration' -v
+
+crawler-py-qa: crawler-py-lint crawler-py-test-unit crawler-py-test-integration
+
+# ----------
+# Migrations
+
+
+crawler-py-migrate: export POSTGRES__HOSTS=localhost:5534
+crawler-py-migrate:
+	cd crawler && poetry run alembic upgrade head
+
+crawler-py-migrate-new:
+	cd crawler && poetry run alembic revision -m "$(name)"
+
+crawler-py-migrate-history:
+	cd crawler && poetry run alembic history --verbose
 
 # ----------
 # Surfer
@@ -75,9 +101,19 @@ run-surfer:
 	cd crawler && poetry run python surfer
 
 # ----------
-# Surfer
+# Downloader
 
 .PHONY: run-downloader
 
 run-downloader:
 	cd crawler && poetry run python downloader
+
+# ----------
+# Crawler all services
+
+.PHONY: crawler crawler-down
+crawler:
+	cd crawler && $(DOCKER_COMPOSE) up -d --build && $(DOCKER_COMPOSE) ps
+
+crawler-down:
+	cd crawler && $(DOCKER_COMPOSE) down -v
