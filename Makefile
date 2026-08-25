@@ -35,7 +35,7 @@ example-site-lint:
 example-site-test-unit:
 	cd example-site && go tool gotestsum -- -v -race -coverprofile=coverage.out ./...
 
-example-site-test-integration: export POSTGRES_HOSTS=localhost:5433
+example-site-test-integration: export POSTGRES_HOSTS=localhost:5533
 example-site-test-integration:
 	cd example-site \
 		&& $(DOCKER_COMPOSE) up -d --wait postgres \
@@ -51,7 +51,22 @@ example-site-down:
 	cd example-site && $(DOCKER_COMPOSE) down -v
 
 # ----------
-# Surfer (and downloader)
+# Migrations
+
+.PHONY: crawler-migrate crawler-migrate-new crawler-migrate-history
+
+crawler-migrate: export POSTGRES__HOSTS=localhost:5534
+crawler-migrate:
+	cd crawler && poetry run alembic upgrade head
+
+crawler-migrate-new:
+	cd crawler && poetry run alembic revision -m "$(name)"
+
+crawler-migrate-history:
+	cd crawler && poetry run alembic history --verbose
+
+# ----------
+# Surfer (and downloader) dev
 
 .PHONY: crawler-py-fmt crawler-py-lint crawler-py-test-unit crawler-py-test-integration
 
@@ -79,18 +94,28 @@ crawler-py-test-integration:
 crawler-py-qa: crawler-py-lint crawler-py-test-unit crawler-py-test-integration
 
 # ----------
-# Migrations
+# Parser dev
 
+.PHONY: crawler-go-fmt crawler-go-lint crawler-go-test-unit crawler-go-test-integration crawler-go-qa
 
-crawler-py-migrate: export POSTGRES__HOSTS=localhost:5534
-crawler-py-migrate:
-	cd crawler && poetry run alembic upgrade head
+crawler-go-generate:
+	cd crawler && go generate ./...
 
-crawler-py-migrate-new:
-	cd crawler && poetry run alembic revision -m "$(name)"
+crawler-go-fmt:
+	cd crawler && go fmt ./... && go fix ./...
 
-crawler-py-migrate-history:
-	cd crawler && poetry run alembic history --verbose
+crawler-go-lint:
+	cd crawler && golangci-lint run ./...
+
+crawler-go-test-unit:
+	cd crawler && go tool gotestsum -- -v -race -coverprofile=coverage.out ./...
+
+crawler-go-test-integration: export POSTGRES_HOSTS=localhost:5534
+crawler-go-test-integration:
+	cd crawler \
+		&& $(DOCKER_COMPOSE) up -d --wait postgres \
+		&& go tool gotestsum -- -tags=integration -v -race -coverprofile=coverage-int.out \
+			./parser/internal/infrastructure/repositories/...
 
 # ----------
 # Surfer

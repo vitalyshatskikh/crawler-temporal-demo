@@ -193,7 +193,7 @@ func TestCalculateTotal_WhenValidNumbersThenExpectedTotal(t *testing.T) {
 
 ## Verification
 After making changes, always run lint and typecheck commands (e.g., `go vet`) to ensure code correctness.
-Do not run tests until user explicitly ask it.
+Do not run integration/e2e tests until user explicitly ask it.
 
 ## Security Best Practices
 - Never commit secrets or credentials
