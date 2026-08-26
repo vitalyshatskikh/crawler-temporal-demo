@@ -26,6 +26,7 @@ def upgrade() -> None:
         sa.column("url_template_params", sa.JSON()),
         sa.column("max_pages", sa.Integer()),
         sa.column("cron_schedule", sa.Text()),
+        sa.column("update_interval_sec", sa.Integer()),
     )
 
     rows = [
@@ -40,6 +41,7 @@ def upgrade() -> None:
             ],
             "max_pages": 5,
             "cron_schedule": "0 1 * * *",
+            "update_interval_sec": 600,
         },
         {
             "name": "siteapi-demo-fresh",
@@ -52,6 +54,7 @@ def upgrade() -> None:
             ],
             "max_pages": 5,
             "cron_schedule": "0/2 * * * *",
+            "update_interval_sec": 7200,
         },
         {
             "name": "siteapi-demo-all",
@@ -64,6 +67,7 @@ def upgrade() -> None:
             ],
             "max_pages": 100,
             "cron_schedule": "0 * * * *",
+            "update_interval_sec": 7200,
         },
     ]
 

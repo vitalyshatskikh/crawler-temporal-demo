@@ -65,12 +65,13 @@ func TestSdocIDForURL_WhenInvalidURL_ThenErrValidation(t *testing.T) {
 func TestDocumentMeta_WhenValid_ThenValidateReturnsNil(t *testing.T) {
 	now := time.Now()
 	meta := domain.DocumentMeta{
-		SdocID:      "abc123",
-		CreatedAt:   now,
-		UpdatedAt:   now,
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
+		SdocID:            "abc123",
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://example.com",
+		UpdateIntervalSec: 86400,
 	}
 
 	err := meta.Validate()
@@ -81,12 +82,13 @@ func TestDocumentMeta_WhenValid_ThenValidateReturnsNil(t *testing.T) {
 func TestDocumentMeta_WhenEmptySourceID_ThenErrValidation(t *testing.T) {
 	now := time.Now()
 	meta := domain.DocumentMeta{
-		SdocID:      "abc123",
-		CreatedAt:   now,
-		UpdatedAt:   now,
-		SourceID:    "",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
+		SdocID:            "abc123",
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		SourceID:          "",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://example.com",
+		UpdateIntervalSec: 86400,
 	}
 
 	err := meta.Validate()
@@ -97,12 +99,13 @@ func TestDocumentMeta_WhenEmptySourceID_ThenErrValidation(t *testing.T) {
 func TestDocumentMeta_WhenEmptySdocID_ThenErrValidation(t *testing.T) {
 	now := time.Now()
 	meta := domain.DocumentMeta{
-		SdocID:      "",
-		CreatedAt:   now,
-		UpdatedAt:   now,
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
+		SdocID:            "",
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://example.com",
+		UpdateIntervalSec: 86400,
 	}
 
 	err := meta.Validate()
@@ -113,12 +116,13 @@ func TestDocumentMeta_WhenEmptySdocID_ThenErrValidation(t *testing.T) {
 func TestDocumentMeta_WhenEmptyExternalURL_ThenErrValidation(t *testing.T) {
 	now := time.Now()
 	meta := domain.DocumentMeta{
-		SdocID:      "abc123",
-		CreatedAt:   now,
-		UpdatedAt:   now,
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "",
+		SdocID:            "abc123",
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "",
+		UpdateIntervalSec: 86400,
 	}
 
 	err := meta.Validate()
@@ -129,12 +133,13 @@ func TestDocumentMeta_WhenEmptyExternalURL_ThenErrValidation(t *testing.T) {
 func TestDocumentMeta_WhenUpdatedAtBeforeCreatedAt_ThenErrValidation(t *testing.T) {
 	now := time.Now()
 	meta := domain.DocumentMeta{
-		SdocID:      "abc123",
-		CreatedAt:   now,
-		UpdatedAt:   now.Add(-time.Second),
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
+		SdocID:            "abc123",
+		CreatedAt:         now,
+		UpdatedAt:         now.Add(-time.Second),
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://example.com",
+		UpdateIntervalSec: 86400,
 	}
 
 	err := meta.Validate()
@@ -168,12 +173,13 @@ func TestSdocIDForURL_WhenEmptyString_ThenErrValidation(t *testing.T) {
 
 func TestDocumentMeta_WhenZeroCreatedAt_ThenErrValidation(t *testing.T) {
 	meta := domain.DocumentMeta{
-		SdocID:      "abc123",
-		CreatedAt:   time.Time{},
-		UpdatedAt:   time.Now(),
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
+		SdocID:            "abc123",
+		CreatedAt:         time.Time{},
+		UpdatedAt:         time.Now(),
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://example.com",
+		UpdateIntervalSec: 86400,
 	}
 
 	err := meta.Validate()
@@ -184,12 +190,13 @@ func TestDocumentMeta_WhenZeroCreatedAt_ThenErrValidation(t *testing.T) {
 
 func TestDocumentMeta_WhenZeroUpdatedAt_ThenErrValidation(t *testing.T) {
 	meta := domain.DocumentMeta{
-		SdocID:      "abc123",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Time{},
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
+		SdocID:            "abc123",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Time{},
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://example.com",
+		UpdateIntervalSec: 86400,
 	}
 
 	err := meta.Validate()
@@ -200,12 +207,13 @@ func TestDocumentMeta_WhenZeroUpdatedAt_ThenErrValidation(t *testing.T) {
 
 func TestDocumentMeta_WhenBothZeroTimestamps_ThenErrValidation(t *testing.T) {
 	meta := domain.DocumentMeta{
-		SdocID:      "abc123",
-		CreatedAt:   time.Time{},
-		UpdatedAt:   time.Time{},
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
+		SdocID:            "abc123",
+		CreatedAt:         time.Time{},
+		UpdatedAt:         time.Time{},
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://example.com",
+		UpdateIntervalSec: 86400,
 	}
 
 	err := meta.Validate()
@@ -216,15 +224,34 @@ func TestDocumentMeta_WhenBothZeroTimestamps_ThenErrValidation(t *testing.T) {
 func TestDocumentMeta_WhenCreatedAtEqualsUpdatedAt_ThenValid(t *testing.T) {
 	now := time.Now()
 	meta := domain.DocumentMeta{
-		SdocID:      "abc123",
-		CreatedAt:   now,
-		UpdatedAt:   now,
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
+		SdocID:            "abc123",
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://example.com",
+		UpdateIntervalSec: 86400,
 	}
 
 	err := meta.Validate()
 
 	assert.NoError(t, err)
+}
+
+func TestDocumentMeta_WhenZeroOrNegativeUpdateIntervalSec_ThenErrValidation(t *testing.T) {
+	now := time.Now()
+	for _, interval := range []int{0, -1} {
+		meta := domain.DocumentMeta{
+			SdocID:            "abc123",
+			CreatedAt:         now,
+			UpdatedAt:         now,
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://example.com",
+			UpdateIntervalSec: interval,
+		}
+		err := meta.Validate()
+		assert.ErrorIs(t, err, domain.ErrValidation)
+		assert.Contains(t, err.Error(), "UpdateIntervalSec")
+	}
 }

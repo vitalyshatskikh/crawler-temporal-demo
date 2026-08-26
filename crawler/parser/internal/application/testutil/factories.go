@@ -14,12 +14,13 @@ func MustSearchPageDocument(sourceID domain.SourceID, url string) domain.Documen
 	now := time.Now()
 	return domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      sdocID,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-			SourceID:    sourceID,
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: url,
+			SdocID:            sdocID,
+			CreatedAt:         now,
+			UpdatedAt:         now,
+			SourceID:          sourceID,
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       url,
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte("{}"),
 	}
@@ -29,12 +30,13 @@ func MustDownloadedAdvertDocument(sourceID domain.SourceID, sdocID domain.SdocID
 	now := time.Now()
 	return domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      sdocID,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-			SourceID:    sourceID,
-			Type:        domain.DocumentTypeDownloadedAdvert,
-			ExternalURL: url,
+			SdocID:            sdocID,
+			CreatedAt:         now,
+			UpdatedAt:         now,
+			SourceID:          sourceID,
+			Type:              domain.DocumentTypeDownloadedAdvert,
+			ExternalURL:       url,
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte("{}"),
 	}
@@ -43,11 +45,12 @@ func MustDownloadedAdvertDocument(sourceID domain.SourceID, sdocID domain.SdocID
 func MustSurfedAdvertMeta(sourceID domain.SourceID, sdocID domain.SdocID, url string) domain.DocumentMeta {
 	now := time.Now()
 	return domain.DocumentMeta{
-		SdocID:      sdocID,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-		SourceID:    sourceID,
-		Type:        domain.DocumentTypeSurfedAdvert,
-		ExternalURL: url,
+		SdocID:            sdocID,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		SourceID:          sourceID,
+		Type:              domain.DocumentTypeSurfedAdvert,
+		ExternalURL:       url,
+		UpdateIntervalSec: 86400,
 	}
 }

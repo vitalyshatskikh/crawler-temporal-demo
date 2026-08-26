@@ -23,6 +23,7 @@ class DocumentMeta(pydantic.BaseModel):
     source_id: SourceID = pydantic.Field(..., min_length=1)
     type: DocumentType
     external_url: str = pydantic.Field(..., min_length=1)
+    update_interval_sec: int = pydantic.Field(..., gt=0)
 
     @pydantic.model_validator(mode='after')
     def validate_dates(self) -> tp.Self:

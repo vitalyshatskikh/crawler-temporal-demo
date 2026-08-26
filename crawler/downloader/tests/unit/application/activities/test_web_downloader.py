@@ -112,6 +112,7 @@ async def test_download_to_repo__when_response_2xx__then_all_doc_meta_fields_pre
         source_id=adverts.SourceID("source-y"),
         type=adverts_models.DocumentType.DOWNLOADED_ADVERT,
         external_url="https://example.com/advert/99",
+        update_interval_sec=86400,
     )
     params = DownloadParamsFactory()
 

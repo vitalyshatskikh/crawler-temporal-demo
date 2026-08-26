@@ -31,6 +31,7 @@ class TestGetSurfConfig:
                     ],
                     max_pages=10,
                     cron_schedule="0/15 * * * *",
+                    update_interval_sec=86400,
                 ),
             )
             await session.commit()
@@ -45,6 +46,7 @@ class TestGetSurfConfig:
         assert len(result.url_template_params) == 1
         assert result.url_template_params[0].values == {"source": "example.com"}
         assert result.max_pages == 10
+        assert result.update_interval_sec == 86400
 
     async def test_when_row_missing_then_raises_not_found(
         self,
@@ -79,6 +81,7 @@ class TestGetSurfSchedules:
                         url_template_params=[{"values": {}, "comment": ""}],
                         max_pages=5,
                         cron_schedule=schedule,
+                        update_interval_sec=86400,
                     ),
                 )
             await session.commit()
@@ -88,6 +91,33 @@ class TestGetSurfSchedules:
         assert result[cfg_name_1] == "0 * * * *"
         assert result[cfg_name_2] == "0/15 * * * *"
         assert result[cfg_name_3] == "0/30 * * * *"
+
+    async def test_when_non_default_update_interval_sec_then_round_trips(
+        self,
+        sessionmaker: sa_asyncio.async_sessionmaker[sa_asyncio.AsyncSession],
+        pg_config_repo: PGConfigRepository,
+    ) -> None:
+        config_name = f"cfg-nd-{uuid4().hex[:12]}"
+
+        async with sessionmaker() as session:
+            await session.execute(
+                sa.insert(surfer_orm.SurfConfigORM).values(
+                    id=int(uuid4().hex[:8], 16) % 100000,
+                    name=config_name,
+                    source_id="src-" + config_name,
+                    url_template="https://" + config_name + ".com/{{page}}",
+                    url_template_params=[{"values": {}, "comment": ""}],
+                    max_pages=3,
+                    cron_schedule="0 * * * *",
+                    update_interval_sec=300,
+                ),
+            )
+            await session.commit()
+
+        result = await pg_config_repo.get_surf_config(config_name)
+
+        assert isinstance(result, surfing.Params)
+        assert result.update_interval_sec == 300
 
     async def test_when_no_rows_then_returns_empty_dict(
         self,

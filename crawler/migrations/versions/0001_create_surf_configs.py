@@ -26,6 +26,7 @@ def upgrade() -> None:
         sa.Column("url_template_params", sa.JSON(), nullable=False),
         sa.Column("max_pages", sa.Integer(), nullable=False),
         sa.Column("cron_schedule", sa.Text(), nullable=False),
+        sa.Column("update_interval_sec", sa.Integer(), nullable=False, server_default="86400"),
     )
     op.create_index("idx_surf_configs_source_id", "surf_configs", ["source_id"])
 

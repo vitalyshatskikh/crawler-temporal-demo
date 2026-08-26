@@ -84,12 +84,13 @@ func (s *ParsingService) ParseSearchPage(ctx context.Context, doc Document) ([]D
 
 		parsedDoc := Document{
 			DocumentMeta: DocumentMeta{
-				SdocID:      sdocID,
-				CreatedAt:   now,
-				UpdatedAt:   now,
-				SourceID:    doc.SourceID,
-				Type:        DocumentTypeSurfedAdvert,
-				ExternalURL: extURL,
+				SdocID:            sdocID,
+				CreatedAt:         now,
+				UpdatedAt:         now,
+				SourceID:          doc.SourceID,
+				Type:              DocumentTypeSurfedAdvert,
+				ExternalURL:       extURL,
+				UpdateIntervalSec: doc.UpdateIntervalSec,
 			},
 			Body: buf.Bytes(),
 		}
@@ -129,12 +130,13 @@ func (s *ParsingService) ParseAdvertContent(ctx context.Context, doc Document) (
 	now := time.Now()
 	return Document{
 		DocumentMeta: DocumentMeta{
-			SdocID:      doc.SdocID,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-			SourceID:    doc.SourceID,
-			Type:        DocumentTypeParsedAdvert,
-			ExternalURL: doc.ExternalURL,
+			SdocID:            doc.SdocID,
+			CreatedAt:         now,
+			UpdatedAt:         now,
+			SourceID:          doc.SourceID,
+			Type:              DocumentTypeParsedAdvert,
+			ExternalURL:       doc.ExternalURL,
+			UpdateIntervalSec: doc.UpdateIntervalSec,
 		},
 		Body: buf.Bytes(),
 	}, nil

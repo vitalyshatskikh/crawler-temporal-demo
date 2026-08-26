@@ -16,6 +16,7 @@ class TestSurfConfigToParams:
             url_template_params=[{"values": {"page": "1"}, "comment": "home"}],
             max_pages=5,
             cron_schedule="0 * * * *",
+            update_interval_sec=86400,
         )
         result = mappers.surf_config_to_params(row)
         assert isinstance(result, surfing.Params)
@@ -37,6 +38,7 @@ class TestParamsToSurfConfig:
             url_template="https://example.com/{{page}}",
             url_template_params=[surfing.TemplateContext(values={"page": "1"})],
             max_pages=10,
+            update_interval_sec=86400,
         )
         result = mappers.params_to_surf_config(params, cron_schedule="0/1 * * * *")
         assert isinstance(result, orm.SurfConfigORM)
@@ -56,6 +58,7 @@ class TestDocumentToMeta:
             body="<html>test</html>",
             created_at=now,
             updated_at=now,
+            update_interval_sec=86400,
         )
         result = shared_mappers.document_to_meta(row)
         assert isinstance(result, adverts.DocumentMeta)
@@ -75,6 +78,7 @@ class TestDocumentToOrm:
             body="<html>downloaded</html>",
             created_at=now,
             updated_at=now,
+            update_interval_sec=86400,
         )
         result = shared_mappers.document_to_orm(doc)
         assert result["sdoc_id"] == "xyz789"

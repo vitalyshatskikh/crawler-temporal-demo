@@ -15,13 +15,18 @@ class PGDocumentRepository(downloading.IDocumentRepository):
         async with self._sessionmaker() as session:
             stmt = pg_insert(orm.DocumentORM).values(**row)
             stmt = stmt.on_conflict_do_update(
-                index_elements=[orm.DocumentORM.sdoc_id],
+                index_elements=[
+                    orm.DocumentORM.sdoc_id,
+                    orm.DocumentORM.source_id,
+                    orm.DocumentORM.doc_type,
+                ],
                 set_={
                     "body": stmt.excluded.body,
                     "updated_at": stmt.excluded.updated_at,
                     "external_url": stmt.excluded.external_url,
                     "doc_type": stmt.excluded.doc_type,
                     "source_id": stmt.excluded.source_id,
+                    "update_interval_sec": stmt.excluded.update_interval_sec,
                 },
             )
             await session.execute(stmt)

@@ -27,12 +27,13 @@ const (
 )
 
 type DocumentMeta struct {
-	SdocID      SdocID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	SourceID    SourceID
-	Type        DocumentType
-	ExternalURL string
+	SdocID            SdocID
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	SourceID          SourceID
+	Type              DocumentType
+	ExternalURL       string
+	UpdateIntervalSec int
 }
 
 func (d DocumentMeta) Validate() error {
@@ -44,6 +45,9 @@ func (d DocumentMeta) Validate() error {
 	}
 	if d.ExternalURL == "" {
 		return fmt.Errorf("%w: ExternalURL is required", ErrValidation)
+	}
+	if d.UpdateIntervalSec <= 0 {
+		return fmt.Errorf("%w: UpdateIntervalSec must be > 0", ErrValidation)
 	}
 	if d.CreatedAt.IsZero() {
 		return fmt.Errorf("%w: CreatedAt is required", ErrValidation)

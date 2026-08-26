@@ -42,6 +42,7 @@ class SurfParamsFactory(factory.Factory):
         ]
     )
     max_pages = 5
+    update_interval_sec = 86400
     id = factory.LazyAttribute(lambda o: o.id_)
 
     class Params:
@@ -61,6 +62,7 @@ class DocMetaFactory(factory.Factory):
     source_id = adverts.SourceID("test")
     type = adverts_models.DocumentType.SURFED_ADVERT
     external_url = factory.LazyAttribute(lambda o: f"https://example.com/{o.sdoc_id}")
+    update_interval_sec = 86400
 
 
 class SurferConfigFactory(factory.Factory):

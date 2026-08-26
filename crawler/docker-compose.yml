@@ -1,4 +1,11 @@
 x-common-env: &common_env
+  # python '__' delim
+  POSTGRES__HOSTS: postgres:5432
+  POSTGRES__USER: postgres
+  POSTGRES__PASSWORD: postgres
+  POSTGRES__DATABASE: crawler
+  POSTGRES__SSLMODE: disable
+  # go '_' delim
   POSTGRES_HOSTS: postgres:5432
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
@@ -37,28 +44,6 @@ services:
     environment: *common_env
     networks: [crawler-network]
     restart: "no"
-
-  surfer:
-    image: crawler-surfer:latest
-    depends_on:
-      postgres:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-    environment: *common_env
-    networks: [crawler-network]
-    restart: unless-stopped
-
-  downloader:
-    image: crawler-downloader:latest
-    depends_on:
-      postgres:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-    environment: *common_env
-    networks: [crawler-network]
-    restart: unless-stopped
 
 networks:
   crawler-network:

@@ -58,6 +58,7 @@ async def insert_document(
             body=body,
             created_at=created_at,
             updated_at=updated_at,
+            update_interval_sec=86400,
         ),
     )
     await session.commit()

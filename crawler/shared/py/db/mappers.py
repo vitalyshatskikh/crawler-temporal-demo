@@ -12,6 +12,7 @@ def document_to_meta(row: orm.DocumentORM) -> adverts.DocumentMeta:
         external_url=row.external_url,
         created_at=row.created_at,
         updated_at=row.updated_at,
+        update_interval_sec=row.update_interval_sec,
     )
 
 
@@ -24,4 +25,5 @@ def document_to_orm(doc: adverts.Document) -> dict[str, tp.Any]:
         "body": doc.body,
         "created_at": doc.created_at,
         "updated_at": doc.updated_at,
+        "update_interval_sec": doc.update_interval_sec,
     }

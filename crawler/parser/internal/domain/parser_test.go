@@ -34,10 +34,11 @@ func TestService_ParseSearchPage_WhenInvalidDoc_ThenErrValidation(t *testing.T) 
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://example.com",
+			SdocID:            "",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://example.com",
+			UpdateIntervalSec: 86400,
 		},
 	}
 
@@ -96,12 +97,13 @@ func TestService_ParseSearchPage_WhenValidInput_ThenUniqueSdocIDsAndCorrectType(
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      domain.SdocID("parent123"),
-			SourceID:    domain.SourceID("src1"),
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://search.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            domain.SdocID("parent123"),
+			SourceID:          domain.SourceID("src1"),
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://search.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"urls": ["https://a.com", "https://b.com"]}`),
 	}
@@ -113,6 +115,38 @@ func TestService_ParseSearchPage_WhenValidInput_ThenUniqueSdocIDsAndCorrectType(
 	assert.Equal(t, domain.DocumentTypeSurfedAdvert, docs[0].Type)
 	assert.Equal(t, domain.DocumentTypeSurfedAdvert, docs[1].Type)
 	assert.NotEqual(t, docs[0].SdocID, docs[1].SdocID)
+}
+
+func TestService_ParseSearchPage_WhenNonDefaultUpdateIntervalSec_ThenPropagatesToChildren(t *testing.T) {
+	mockConfRepo := testutil.NewMockConfigRepository(t)
+	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
+		SourceID:     "src1",
+		DocumentType: domain.DocumentTypeSearchPage,
+		Params: []domain.ParsingParam{
+			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
+		},
+	}, nil)
+	svc, _ := domain.NewParsingService(mockConfRepo)
+
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:            domain.SdocID("parent123"),
+			SourceID:          domain.SourceID("src1"),
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://search.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 3600,
+		},
+		Body: []byte(`{"urls": ["https://a.com", "https://b.com"]}`),
+	}
+
+	docs, err := svc.ParseSearchPage(context.Background(), doc)
+
+	assert.NoError(t, err)
+	assert.Len(t, docs, 2)
+	assert.Equal(t, 3600, docs[0].UpdateIntervalSec)
+	assert.Equal(t, 3600, docs[1].UpdateIntervalSec)
 }
 
 func TestService_ParseSearchPage_WhenEmptySnippets_ThenEmptySlice(t *testing.T) {
@@ -128,12 +162,13 @@ func TestService_ParseSearchPage_WhenEmptySnippets_ThenEmptySlice(t *testing.T) 
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      domain.SdocID("parent123"),
-			SourceID:    domain.SourceID("src1"),
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://search.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            domain.SdocID("parent123"),
+			SourceID:          domain.SourceID("src1"),
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://search.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"urls": []}`),
 	}
@@ -150,10 +185,11 @@ func TestService_ParseAdvertContent_WhenInvalidDoc_ThenErrValidation(t *testing.
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "doc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeDownloadedAdvert,
-			ExternalURL: "",
+			SdocID:            "doc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeDownloadedAdvert,
+			ExternalURL:       "",
+			UpdateIntervalSec: 86400,
 		},
 	}
 
@@ -170,12 +206,13 @@ func TestService_ParseAdvertContent_WhenConfigNotFound_ThenErrNotFound(t *testin
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "doc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeDownloadedAdvert,
-			ExternalURL: "https://example.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "doc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeDownloadedAdvert,
+			ExternalURL:       "https://example.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"url": "https://example.com/product/123"}`),
 	}
@@ -197,12 +234,13 @@ func TestService_ParseAdvertContent_WhenValid_ThenCorrectTypeAndBody(t *testing.
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "doc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeDownloadedAdvert,
-			ExternalURL: "https://example.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "doc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeDownloadedAdvert,
+			ExternalURL:       "https://example.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"url": "https://example.com/product/123"}`),
 	}
@@ -214,16 +252,45 @@ func TestService_ParseAdvertContent_WhenValid_ThenCorrectTypeAndBody(t *testing.
 	assert.Equal(t, doc.SdocID, result.SdocID)
 }
 
+func TestService_ParseAdvertContent_WhenNonDefaultUpdateIntervalSec_ThenPropagatesToOutput(t *testing.T) {
+	mockConfRepo := testutil.NewMockConfigRepository(t)
+	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
+		SourceID:     "src1",
+		DocumentType: domain.DocumentTypeDownloadedAdvert,
+		Params:       []domain.ParsingParam{{Name: "url", JMESPath: "url", Default: ""}},
+	}, nil)
+	svc, _ := domain.NewParsingService(mockConfRepo)
+
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:            "doc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeDownloadedAdvert,
+			ExternalURL:       "https://example.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 7200,
+		},
+		Body: []byte(`{"url": "https://example.com/product/123"}`),
+	}
+
+	result, err := svc.ParseAdvertContent(context.Background(), doc)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 7200, result.UpdateIntervalSec)
+}
+
 func TestService_ParseSearchPage_WhenWrongDocType_ThenErrValidation(t *testing.T) {
 	confRepo := testutil.NewMockConfigRepository(t)
 	svc, _ := domain.NewParsingService(confRepo)
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "doc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSurfedAdvert,
-			ExternalURL: "https://example.com",
+			SdocID:            "doc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSurfedAdvert,
+			ExternalURL:       "https://example.com",
+			UpdateIntervalSec: 86400,
 		},
 	}
 
@@ -241,10 +308,11 @@ func TestService_ParseAdvertContent_WhenWrongDocType_ThenErrValidation(t *testin
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "doc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSurfedAdvert,
-			ExternalURL: "https://example.com",
+			SdocID:            "doc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSurfedAdvert,
+			ExternalURL:       "https://example.com",
+			UpdateIntervalSec: 86400,
 		},
 	}
 
@@ -347,12 +415,13 @@ func TestService_ParseSearchPage_WhenCtxCancelled_ThenReturnsCtxErr(t *testing.T
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "doc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://example.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "doc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://example.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"urls": ["https://a.com"]}`),
 	}

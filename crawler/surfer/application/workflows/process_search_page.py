@@ -42,6 +42,7 @@ class ProcessSearchPage:
             source_id=in_.surf_params.source_id,
             type=adverts.DocumentType.SEARCH_PAGE,
             external_url=in_.page_url,
+            update_interval_sec=in_.surf_params.update_interval_sec,
         )
         page_meta = await workflow.execute_child_workflow(
             consts.WorkflowName.DOWNLOAD_SEARCH_PAGE,

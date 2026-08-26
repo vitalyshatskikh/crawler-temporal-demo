@@ -14,6 +14,7 @@ def surf_config_to_params(row: orm.SurfConfigORM) -> surfing.Params:
             for p in row.url_template_params
         ],
         max_pages=row.max_pages,
+        update_interval_sec=row.update_interval_sec,
     )
 
 
@@ -26,4 +27,5 @@ def params_to_surf_config(params: surfing.Params, cron_schedule: str) -> orm.Sur
         url_template_params=[t.model_dump() for t in params.url_template_params],
         max_pages=params.max_pages,
         cron_schedule=cron_schedule,
+        update_interval_sec=params.update_interval_sec,
     )

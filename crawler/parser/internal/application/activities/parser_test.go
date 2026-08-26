@@ -53,12 +53,13 @@ func TestParser_ParseSearchPage_WhenInvalidMetaType_ThenErrValidation(t *testing
 	parser, _ := activities.NewParser(svc, mockRepo)
 
 	meta := domain.DocumentMeta{
-		SdocID:      "sdoc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSurfedAdvert,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSurfedAdvert,
+		ExternalURL:       "https://example.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	metas, err := parser.ParseSearchPage(context.Background(), meta)
@@ -81,12 +82,13 @@ func TestParser_ParseSearchPage_WhenRepoGetFails_ThenWrappedError(t *testing.T) 
 	).Return(domain.Document{}, errors.New("repo get failed"))
 
 	meta := domain.DocumentMeta{
-		SdocID:      "sdoc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://search.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://search.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	metas, err := parser.ParseSearchPage(context.Background(), meta)
@@ -120,23 +122,25 @@ func TestParser_ParseSearchPage_WhenServiceFails_ThenWrappedError(t *testing.T) 
 		mock.Anything,
 	).Return(domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "sdoc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://search.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "sdoc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://search.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"urls": []}`),
 	}, nil)
 
 	meta := domain.DocumentMeta{
-		SdocID:      "sdoc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://search.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://search.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	metas, err := parser.ParseSearchPage(context.Background(), meta)
@@ -167,12 +171,13 @@ func TestParser_ParseSearchPage_WhenValid_ThenSavesAllAndReturnsMetas(t *testing
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "parent123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://search.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "parent123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://search.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"urls": ["https://a.com", "https://b.com"]}`),
 	}
@@ -189,12 +194,13 @@ func TestParser_ParseSearchPage_WhenValid_ThenSavesAllAndReturnsMetas(t *testing
 	).Return(nil).Twice()
 
 	meta := domain.DocumentMeta{
-		SdocID:      "parent123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://search.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "parent123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://search.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	metas, err := parser.ParseSearchPage(context.Background(), meta)
@@ -225,12 +231,13 @@ func TestParser_ParseSearchPage_WhenEmptyURLs_ThenReturnsNonNilEmptySliceAndNoSa
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "parent123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://search.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "parent123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://search.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"urls": []}`),
 	}
@@ -242,12 +249,13 @@ func TestParser_ParseSearchPage_WhenEmptyURLs_ThenReturnsNonNilEmptySliceAndNoSa
 	).Return(doc, nil)
 
 	meta := domain.DocumentMeta{
-		SdocID:      "parent123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://search.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "parent123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://search.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	metas, err := parser.ParseSearchPage(context.Background(), meta)
@@ -278,12 +286,13 @@ func TestParser_ParseSearchPage_WhenSaveFails_ThenReturnsErrorAndStops(t *testin
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "parent123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://search.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "parent123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://search.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"urls": ["https://a.com", "https://b.com"]}`),
 	}
@@ -300,12 +309,13 @@ func TestParser_ParseSearchPage_WhenSaveFails_ThenReturnsErrorAndStops(t *testin
 	).Return(errors.New("save failed")).Once()
 
 	meta := domain.DocumentMeta{
-		SdocID:      "parent123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://search.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "parent123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://search.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	metas, err := parser.ParseSearchPage(context.Background(), meta)
@@ -324,12 +334,13 @@ func TestParser_ParseAdvertContent_WhenInvalidMetaType_ThenErrValidation(t *test
 	parser, _ := activities.NewParser(svc, mockRepo)
 
 	meta := domain.DocumentMeta{
-		SdocID:      "sdoc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://example.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	err := parser.ParseAdvertContent(context.Background(), meta)
@@ -351,12 +362,13 @@ func TestParser_ParseAdvertContent_WhenRepoGetFails_ThenWrappedError(t *testing.
 	).Return(domain.Document{}, errors.New("repo get failed"))
 
 	meta := domain.DocumentMeta{
-		SdocID:      "sdoc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeDownloadedAdvert,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeDownloadedAdvert,
+		ExternalURL:       "https://example.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	err := parser.ParseAdvertContent(context.Background(), meta)
@@ -389,23 +401,25 @@ func TestParser_ParseAdvertContent_WhenServiceFails_ThenWrappedError(t *testing.
 		mock.Anything,
 	).Return(domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "sdoc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeDownloadedAdvert,
-			ExternalURL: "https://example.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "sdoc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeDownloadedAdvert,
+			ExternalURL:       "https://example.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"url": "https://example.com"}`),
 	}, nil)
 
 	meta := domain.DocumentMeta{
-		SdocID:      "sdoc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeDownloadedAdvert,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeDownloadedAdvert,
+		ExternalURL:       "https://example.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	err := parser.ParseAdvertContent(context.Background(), meta)
@@ -435,12 +449,13 @@ func TestParser_ParseAdvertContent_WhenSaveFails_ThenWrappedError(t *testing.T) 
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "sdoc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeDownloadedAdvert,
-			ExternalURL: "https://example.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "sdoc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeDownloadedAdvert,
+			ExternalURL:       "https://example.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"url": "https://example.com/product/123"}`),
 	}
@@ -457,12 +472,13 @@ func TestParser_ParseAdvertContent_WhenSaveFails_ThenWrappedError(t *testing.T) 
 	).Return(errors.New("save failed"))
 
 	meta := domain.DocumentMeta{
-		SdocID:      "sdoc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeDownloadedAdvert,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeDownloadedAdvert,
+		ExternalURL:       "https://example.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	err := parser.ParseAdvertContent(context.Background(), meta)
@@ -492,12 +508,13 @@ func TestParser_ParseAdvertContent_WhenValid_ThenSavesAndReturnsNil(t *testing.T
 
 	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "sdoc123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeDownloadedAdvert,
-			ExternalURL: "https://example.com",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			SdocID:            "sdoc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeDownloadedAdvert,
+			ExternalURL:       "https://example.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
 		},
 		Body: []byte(`{"url": "https://example.com/product/123"}`),
 	}
@@ -514,12 +531,13 @@ func TestParser_ParseAdvertContent_WhenValid_ThenSavesAndReturnsNil(t *testing.T
 	).Return(nil).Once()
 
 	meta := domain.DocumentMeta{
-		SdocID:      "sdoc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeDownloadedAdvert,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeDownloadedAdvert,
+		ExternalURL:       "https://example.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
 	}
 
 	err := parser.ParseAdvertContent(context.Background(), meta)

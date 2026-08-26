@@ -18,24 +18,26 @@ func SourceIDFactory() domain.SourceID {
 
 func DocumentMetaFactory() domain.DocumentMeta {
 	return domain.DocumentMeta{
-		SdocID:      SdocIDFactory(),
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		SourceID:    SourceIDFactory(),
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: faker.URL(),
+		SdocID:            SdocIDFactory(),
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		SourceID:          SourceIDFactory(),
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       faker.URL(),
+		UpdateIntervalSec: 86400,
 	}
 }
 
 func MustDocumentMeta(url string, sdocID domain.SdocID, sourceID domain.SourceID) domain.DocumentMeta {
 	now := time.Now()
 	return domain.DocumentMeta{
-		SdocID:      sdocID,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-		SourceID:    sourceID,
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: url,
+		SdocID:            sdocID,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		SourceID:          sourceID,
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       url,
+		UpdateIntervalSec: 86400,
 	}
 }
 
