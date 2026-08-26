@@ -1,5 +1,9 @@
 # Crawler
 
+[![CI Crawler Python](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-crawler-py.yml/badge.svg)](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-crawler-py.yml)
+[![CI Crawler Go](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-crawler-go.yml/badge.svg)](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-crawler-go.yml)
+[![CI Example Site](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-example-site.yml/badge.svg)](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-example-site.yml)
+
 Sample web crawing/scraping app
 
 ```mermaid
