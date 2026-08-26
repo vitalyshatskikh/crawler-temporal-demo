@@ -8,7 +8,6 @@ import temporalio.testing
 import temporalio.worker
 
 from surfer.application import activities, consts, workflows
-from surfer.domain.adverts import repositories as adverts_repo
 from surfer.domain.surfing import repositories as surfing_repo
 from surfer.tests._factories import (
     SearchAdvertsInFactory,
@@ -43,9 +42,6 @@ async def test_run__when_one_branch__then_starts_one_child_and_completes(
                 activities.SurfConfigRepo(
                     surfing_repo.DummyConfigRepository(result=surf_params),  # type: ignore[arg-type]
                 ).get_surf_params,
-                activities.AdvertsRepo(
-                    adverts_repo.DummyAdvertsRepository(result={}),
-                ).get_documents_meta,
             ],
             task_queue=consts.QueueName.SURFING_TASK,
             interceptors=[WorkflowMockInterceptor()],
@@ -86,9 +82,6 @@ async def test_run__when_three_branches__then_starts_three_children_with_sequent
                 activities.SurfConfigRepo(
                     surfing_repo.DummyConfigRepository(result=surf_params),  # type: ignore[arg-type]
                 ).get_surf_params,
-                activities.AdvertsRepo(
-                    adverts_repo.DummyAdvertsRepository(result={}),
-                ).get_documents_meta,
             ],
             task_queue=consts.QueueName.SURFING_TASK,
             interceptors=[WorkflowMockInterceptor()],
@@ -131,9 +124,6 @@ async def test_run__when_some_branches_fail__then_raises_error(
                 activities.SurfConfigRepo(
                     surfing_repo.DummyConfigRepository(result=surf_params),  # type: ignore[arg-type]
                 ).get_surf_params,
-                activities.AdvertsRepo(
-                    adverts_repo.DummyAdvertsRepository(result={}),
-                ).get_documents_meta,
             ],
             task_queue=consts.QueueName.SURFING_TASK,
             interceptors=[WorkflowMockInterceptor()],
@@ -167,9 +157,6 @@ async def test_run__when_repo_raises__then_workflow_fails(
                         error=RuntimeError('repo boom'),
                     ),
                 ).get_surf_params,
-                activities.AdvertsRepo(
-                    adverts_repo.DummyAdvertsRepository(result={}),
-                ).get_documents_meta,
             ],
             task_queue=consts.QueueName.SURFING_TASK,
             interceptors=[WorkflowMockInterceptor()],
@@ -208,9 +195,6 @@ async def test_run__when_all_branches_succeed__then_completes(
                 activities.SurfConfigRepo(
                     surfing_repo.DummyConfigRepository(result=surf_params),  # type: ignore[arg-type]
                 ).get_surf_params,
-                activities.AdvertsRepo(
-                    adverts_repo.DummyAdvertsRepository(result={}),
-                ).get_documents_meta,
             ],
             task_queue=consts.QueueName.SURFING_TASK,
             interceptors=[WorkflowMockInterceptor()],

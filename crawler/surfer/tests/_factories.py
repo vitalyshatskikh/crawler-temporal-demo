@@ -6,6 +6,7 @@ import pytest
 import temporalio.client
 from faker import Faker
 
+from shared.py.settings import RetryConfig
 from surfer.application.config import SurferConfig
 from surfer.application.workflows import models as wf_models
 from surfer.application.workflows.process_advert import ProcessAdvertIn
@@ -69,14 +70,20 @@ class SurferConfigFactory(factory.Factory):
     class Meta:
         model = SurferConfig
 
-    process_branch_timeout = dt.timedelta(minutes=15)
-    process_search_page_timeout = dt.timedelta(minutes=5)
-    process_advert_timeout = dt.timedelta(minutes=5)
+    search_adverts_timeout = dt.timedelta(minutes=20)
+    process_branch_wf_timeout = dt.timedelta(minutes=15)
+    process_search_page_wf_timeout = dt.timedelta(minutes=5)
+    process_advert_wf_timeout = dt.timedelta(minutes=5)
+    download_search_page_wf_timeout = dt.timedelta(minutes=4)
+    download_advert_content_wf_timeout = dt.timedelta(minutes=4)
     download_search_page_timeout = dt.timedelta(minutes=4)
     download_advert_content_timeout = dt.timedelta(minutes=4)
     repo_request_timeout = dt.timedelta(seconds=15)
+    repo_request_retry = RetryConfig()
     parse_search_page_timeout = dt.timedelta(seconds=30)
+    parse_search_page_retry = RetryConfig()
     parse_advert_content_timeout = dt.timedelta(seconds=30)
+    parse_advert_content_retry = RetryConfig()
 
 
 class SearchAdvertsInFactory(factory.Factory):

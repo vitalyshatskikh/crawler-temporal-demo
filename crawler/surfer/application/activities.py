@@ -13,20 +13,11 @@ class SurfConfigRepo:
         return await self._repo.get_surf_config(name)
 
 
-class AdvertsRepo:
-    def __init__(self, repo: adverts.IAdvertsRepository):
-        self._repo = repo
-
-    @activity.defn(name=consts.ActivityName.GET_DOCUMENTS_META)
-    async def get_documents_meta(self, sdoc_ids: list[adverts.SdocID]) -> dict[adverts.SdocID, adverts.DocumentMeta]:
-        return await self._repo.get_documents_meta_by_sdoc_id(sdoc_ids)
-
-
 # TODO move into separate app
 @activity.defn(name=consts.ActivityName.PARSE_SEARCH_PAGE)
-async def dummy_parse_search_page(url: str) -> list[adverts.SdocID]:
-    activity.logger.info("parse search page %s", url)
-    return list(map(adverts.SdocID, ("1", "2", "3")))
+async def dummy_parse_search_page(meta: adverts.DocumentMeta) -> list[adverts.DocumentMeta]:
+    activity.logger.info("parse search page %s", meta.external_url)
+    return []
 
 
 # TODO move into separate app

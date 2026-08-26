@@ -10,7 +10,6 @@ class QueueName(enum.StrEnum):
 
 class ActivityName(enum.StrEnum):
     GET_SURF_CONFIG = "GetSurfParams"
-    GET_DOCUMENTS_META = "GetDocumentsMeta"
     PARSE_SEARCH_PAGE = "ParseSearchPage"
     PARSE_ADVERT_CONTENT = "ParseAdvertContent"
 

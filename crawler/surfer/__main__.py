@@ -33,7 +33,6 @@ async def main() -> None:
     sessionmaker = db_engine.make_sessionmaker(engine)
 
     surf_config_repo = repositories.PGConfigRepository(sessionmaker)
-    adverts_repo = repositories.PGAdvertsRepo(sessionmaker)
 
     schedules_conf = await surf_config_repo.get_surf_schedules()
     await schedules.setup_surfing(client, app_config.surfer, schedules_conf)
@@ -42,7 +41,6 @@ async def main() -> None:
         workers.SurfingWorker(
             client=client,
             surf_config_repo=surf_config_repo,
-            adverts_repo=adverts_repo,
         ),
         workers.AdvertsWorker(client=client),
         workers.ParsingWorker(client=client),

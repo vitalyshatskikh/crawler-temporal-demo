@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -254,4 +255,37 @@ func TestDocumentMeta_WhenZeroOrNegativeUpdateIntervalSec_ThenErrValidation(t *t
 		assert.ErrorIs(t, err, domain.ErrValidation)
 		assert.Contains(t, err.Error(), "UpdateIntervalSec")
 	}
+}
+
+func TestDocumentMeta_WhenMarshaledToJSON_ThenKeysAreSnakeCase(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	meta := domain.DocumentMeta{
+		SdocID:            "abc123",
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSurfedAdvert,
+		ExternalURL:       "https://example.com",
+		UpdateIntervalSec: 86400,
+	}
+
+	data, err := json.Marshal(meta)
+	assert.NoError(t, err)
+
+	expected := `{"sdoc_id":"abc123","created_at":"` + now.Format(time.RFC3339) + `","updated_at":"` + now.Format(time.RFC3339) + `","source_id":"src1","type":"surfed_advert","external_url":"https://example.com","update_interval_sec":86400}`
+	assert.JSONEq(t, expected, string(data))
+}
+
+func TestDocumentMeta_WhenUnmarshaledFromSnakeCaseJSON_ThenFieldsPopulated(t *testing.T) {
+	jsonData := `{"sdoc_id":"abc123","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-02T00:00:00Z","source_id":"src1","type":"surfed_advert","external_url":"https://example.com","update_interval_sec":86400}`
+
+	var meta domain.DocumentMeta
+	err := json.Unmarshal([]byte(jsonData), &meta)
+	assert.NoError(t, err)
+
+	assert.Equal(t, domain.SdocID("abc123"), meta.SdocID)
+	assert.Equal(t, domain.SourceID("src1"), meta.SourceID)
+	assert.Equal(t, domain.DocumentType("surfed_advert"), meta.Type)
+	assert.Equal(t, "https://example.com", meta.ExternalURL)
+	assert.Equal(t, 86400, meta.UpdateIntervalSec)
 }

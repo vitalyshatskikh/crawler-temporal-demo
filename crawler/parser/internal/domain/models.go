@@ -27,13 +27,13 @@ const (
 )
 
 type DocumentMeta struct {
-	SdocID            SdocID
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
-	SourceID          SourceID
-	Type              DocumentType
-	ExternalURL       string
-	UpdateIntervalSec int
+	SdocID            SdocID       `json:"sdoc_id"`
+	CreatedAt         time.Time    `json:"created_at"`
+	UpdatedAt         time.Time    `json:"updated_at"`
+	SourceID          SourceID     `json:"source_id"`
+	Type              DocumentType `json:"type"`
+	ExternalURL       string       `json:"external_url"`
+	UpdateIntervalSec int          `json:"update_interval_sec"`
 }
 
 func (d DocumentMeta) Validate() error {
