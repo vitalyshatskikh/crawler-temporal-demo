@@ -22,47 +22,38 @@ type parserKey struct {
 // static. Use a new service instance if config refresh is needed.
 type ParsingService struct {
 	confRepo ConfigRepository
-	docRepo  AdvertsRepository
 
 	mu          sync.RWMutex
 	jmesParsers map[parserKey]*JMESParser
 	sf          singleflight.Group
 }
 
-func NewParsingService(confRepo ConfigRepository, docRepo AdvertsRepository) (*ParsingService, error) {
-	if confRepo == nil || docRepo == nil {
+func NewParsingService(confRepo ConfigRepository) (*ParsingService, error) {
+	if confRepo == nil {
 		return nil, ErrValidation
 	}
 	return &ParsingService{
 		confRepo:    confRepo,
-		docRepo:     docRepo,
 		jmesParsers: make(map[parserKey]*JMESParser),
 	}, nil
 }
 
-func (s *ParsingService) ParseSearchPage(ctx context.Context, meta DocumentMeta) ([]Document, error) {
-	if meta.Type != DocumentTypeSearchPage {
-		return nil, fmt.Errorf("%w: meta.Type must be DocumentTypeSearchPage", ErrValidation)
+func (s *ParsingService) ParseSearchPage(ctx context.Context, doc Document) ([]Document, error) {
+	if doc.Type != DocumentTypeSearchPage {
+		return nil, fmt.Errorf("%w: doc.Type must be DocumentTypeSearchPage", ErrValidation)
 	}
-	if err := meta.Validate(); err != nil {
+	if err := doc.Validate(); err != nil {
 		return nil, err
 	}
 
-	docType := DocumentTypeSearchPage
-
-	doc, err := s.docRepo.GetDocument(ctx, meta.SdocID, meta.SourceID, docType)
+	parser, err := s.getJMESParser(ctx, doc.SourceID, doc.Type)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get search page %s/%s: %w", meta.SourceID, meta.SdocID, err)
-	}
-
-	parser, err := s.getJMESParser(ctx, meta.SourceID, docType)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get search page parser %s/%s: %w", meta.SourceID, meta.SdocID, err)
+		return nil, fmt.Errorf("failed to get search page parser %s/%s: %w", doc.SourceID, doc.SdocID, err)
 	}
 
 	parsed, err := parser.Parse(ctx, doc.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse search page %s/%s: %w", meta.SourceID, meta.SdocID, err)
+		return nil, fmt.Errorf("failed to parse search page %s/%s: %w", doc.SourceID, doc.SdocID, err)
 	}
 
 	urls := parsed[PropExternalURL]
@@ -87,7 +78,7 @@ func (s *ParsingService) ParseSearchPage(ctx context.Context, meta DocumentMeta)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"failed to encode parsed snippet %s/%s: %w",
-				meta.SourceID, sdocID, err,
+				doc.SourceID, sdocID, err,
 			)
 		}
 
@@ -96,7 +87,7 @@ func (s *ParsingService) ParseSearchPage(ctx context.Context, meta DocumentMeta)
 				SdocID:      sdocID,
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				SourceID:    meta.SourceID,
+				SourceID:    doc.SourceID,
 				Type:        DocumentTypeSurfedAdvert,
 				ExternalURL: extURL,
 			},
@@ -108,29 +99,22 @@ func (s *ParsingService) ParseSearchPage(ctx context.Context, meta DocumentMeta)
 	return parsedDocs, nil
 }
 
-func (s *ParsingService) ParseAdvertContent(ctx context.Context, meta DocumentMeta) (Document, error) {
-	if meta.Type != DocumentTypeDownloadedAdvert {
-		return Document{}, fmt.Errorf("%w: meta.Type must be DocumentTypeDownloadedAdvert", ErrValidation)
+func (s *ParsingService) ParseAdvertContent(ctx context.Context, doc Document) (Document, error) {
+	if doc.Type != DocumentTypeDownloadedAdvert {
+		return Document{}, fmt.Errorf("%w: doc.Type must be DocumentTypeDownloadedAdvert", ErrValidation)
 	}
-	if err := meta.Validate(); err != nil {
+	if err := doc.Validate(); err != nil {
 		return Document{}, err
 	}
 
-	docType := DocumentTypeDownloadedAdvert
-
-	doc, err := s.docRepo.GetDocument(ctx, meta.SdocID, meta.SourceID, docType)
+	parser, err := s.getJMESParser(ctx, doc.SourceID, doc.Type)
 	if err != nil {
-		return Document{}, fmt.Errorf("failed to get advert %s/%s: %w", meta.SourceID, meta.SdocID, err)
-	}
-
-	parser, err := s.getJMESParser(ctx, meta.SourceID, docType)
-	if err != nil {
-		return Document{}, fmt.Errorf("failed to get advert parser %s/%s: %w", meta.SourceID, meta.SdocID, err)
+		return Document{}, fmt.Errorf("failed to get advert parser %s/%s: %w", doc.SourceID, doc.SdocID, err)
 	}
 
 	parsed, err := parser.Parse(ctx, doc.Body)
 	if err != nil {
-		return Document{}, fmt.Errorf("failed to parse advert %s/%s: %w", meta.SourceID, meta.SdocID, err)
+		return Document{}, fmt.Errorf("failed to parse advert %s/%s: %w", doc.SourceID, doc.SdocID, err)
 	}
 
 	buf := &bytes.Buffer{}
@@ -138,19 +122,19 @@ func (s *ParsingService) ParseAdvertContent(ctx context.Context, meta DocumentMe
 	if err != nil {
 		return Document{}, fmt.Errorf(
 			"failed to encode parsed advert %s/%s: %w",
-			meta.SourceID, meta.SdocID, err,
+			doc.SourceID, doc.SdocID, err,
 		)
 	}
 
 	now := time.Now()
 	return Document{
 		DocumentMeta: DocumentMeta{
-			SdocID:      meta.SdocID,
+			SdocID:      doc.SdocID,
 			CreatedAt:   now,
 			UpdatedAt:   now,
-			SourceID:    meta.SourceID,
+			SourceID:    doc.SourceID,
 			Type:        DocumentTypeParsedAdvert,
-			ExternalURL: meta.ExternalURL,
+			ExternalURL: doc.ExternalURL,
 		},
 		Body: buf.Bytes(),
 	}, nil

@@ -8,4 +8,6 @@ packages:
   github.com/vitalyshatskikh/crawler-temporal-demo/crawler/parser/internal/domain:
     interfaces:
       ConfigRepository:
+  github.com/vitalyshatskikh/crawler-temporal-demo/crawler/parser/internal/application:
+    interfaces:
       AdvertsRepository:

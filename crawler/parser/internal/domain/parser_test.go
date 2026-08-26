@@ -2,7 +2,6 @@ package domain_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -13,78 +12,52 @@ import (
 	"github.com/vitalyshatskikh/crawler-temporal-demo/crawler/parser/internal/domain/testutil"
 )
 
-func TestService_New_WhenNilConfRepo_ThenErrValidation(t *testing.T) {
-	docRepo := testutil.NewMockAdvertsRepository(t)
-
-	svc, err := domain.NewParsingService(nil, docRepo)
+func TestNewParsingServiceWhenNilConfRepo_ThenErrValidation(t *testing.T) {
+	svc, err := domain.NewParsingService(nil)
 
 	assert.Nil(t, svc)
 	assert.ErrorIs(t, err, domain.ErrValidation)
 }
 
-func TestService_New_WhenNilDocRepo_ThenErrValidation(t *testing.T) {
+func TestNewParsingServiceWhenValidConfRepo_ThenNonNilService(t *testing.T) {
 	confRepo := testutil.NewMockConfigRepository(t)
 
-	svc, err := domain.NewParsingService(confRepo, nil)
-
-	assert.Nil(t, svc)
-	assert.ErrorIs(t, err, domain.ErrValidation)
-}
-
-func TestService_New_WhenBothValid_ThenNonNilService(t *testing.T) {
-	confRepo := testutil.NewMockConfigRepository(t)
-	docRepo := testutil.NewMockAdvertsRepository(t)
-
-	svc, err := domain.NewParsingService(confRepo, docRepo)
+	svc, err := domain.NewParsingService(confRepo)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, svc)
 }
 
-func TestService_ParseSearchPage_WhenInvalidMeta_ThenErrValidation(t *testing.T) {
+func TestService_ParseSearchPage_WhenInvalidDoc_ThenErrValidation(t *testing.T) {
 	confRepo := testutil.NewMockConfigRepository(t)
-	docRepo := testutil.NewMockAdvertsRepository(t)
-	svc, _ := domain.NewParsingService(confRepo, docRepo)
+	svc, _ := domain.NewParsingService(confRepo)
 
-	meta := domain.DocumentMeta{
-		SdocID:      "",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:      "",
+			SourceID:    "src1",
+			Type:        domain.DocumentTypeSearchPage,
+			ExternalURL: "https://example.com",
+		},
 	}
 
-	docs, err := svc.ParseSearchPage(context.Background(), meta)
+	docs, err := svc.ParseSearchPage(context.Background(), doc)
 
 	assert.Nil(t, docs)
 	assert.ErrorIs(t, err, domain.ErrValidation)
 }
 
-func TestService_ParseSearchPage_WhenDocRepoError_ThenWrapsErr(t *testing.T) {
-	confRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
-	svc, _ := domain.NewParsingService(confRepo, mockDocRepo)
-
-	meta := testutil.MustDocumentMeta("https://search.com", "parent123", "src1")
-	mockDocRepo.On("GetDocument", mock.Anything, meta.SdocID, meta.SourceID, domain.DocumentTypeSearchPage).
-		Return(domain.Document{}, errors.New("db error"))
-
-	docs, err := svc.ParseSearchPage(context.Background(), meta)
-
-	assert.Nil(t, docs)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "db error")
-}
-
 func TestService_ParseSearchPage_WhenConfigMissing_ThenErrNotFound(t *testing.T) {
 	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
 	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{}, domain.ErrNotFound)
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{}, nil)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
+	svc, _ := domain.NewParsingService(mockConfRepo)
 
-	meta := testutil.MustDocumentMeta("https://search.com", "parent123", "src1")
+	doc := domain.Document{
+		DocumentMeta: testutil.MustDocumentMeta("https://search.com", "parent123", "src1"),
+		Body:         []byte(`{"urls": ["https://a.com"]}`),
+	}
 
-	docs, err := svc.ParseSearchPage(context.Background(), meta)
+	docs, err := svc.ParseSearchPage(context.Background(), doc)
 
 	assert.Nil(t, docs)
 	assert.ErrorIs(t, err, domain.ErrNotFound)
@@ -92,18 +65,19 @@ func TestService_ParseSearchPage_WhenConfigMissing_ThenErrNotFound(t *testing.T)
 
 func TestService_ParseSearchPage_WhenNoExternalURLParam_ThenErrValidation(t *testing.T) {
 	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
 	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
 		SourceID:     "src1",
 		DocumentType: domain.DocumentTypeSearchPage,
 		Params:       []domain.ParsingParam{{Name: "title", JMESPath: "title", Default: ""}},
 	}, nil)
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{}, nil)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
+	svc, _ := domain.NewParsingService(mockConfRepo)
 
-	meta := testutil.MustDocumentMeta("https://search.com", "parent123", "src1")
+	doc := domain.Document{
+		DocumentMeta: testutil.MustDocumentMeta("https://search.com", "parent123", "src1"),
+		Body:         []byte(`{}`),
+	}
 
-	docs, err := svc.ParseSearchPage(context.Background(), meta)
+	docs, err := svc.ParseSearchPage(context.Background(), doc)
 
 	assert.Nil(t, docs)
 	assert.ErrorIs(t, err, domain.ErrValidation)
@@ -111,7 +85,6 @@ func TestService_ParseSearchPage_WhenNoExternalURLParam_ThenErrValidation(t *tes
 
 func TestService_ParseSearchPage_WhenValidInput_ThenUniqueSdocIDsAndCorrectType(t *testing.T) {
 	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
 	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
 		SourceID:     "src1",
 		DocumentType: domain.DocumentTypeSearchPage,
@@ -119,27 +92,21 @@ func TestService_ParseSearchPage_WhenValidInput_ThenUniqueSdocIDsAndCorrectType(
 			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
 		},
 	}, nil)
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{
+	svc, _ := domain.NewParsingService(mockConfRepo)
+
+	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "parent123",
-			SourceID:    "src1",
+			SdocID:      domain.SdocID("parent123"),
+			SourceID:    domain.SourceID("src1"),
 			Type:        domain.DocumentTypeSearchPage,
 			ExternalURL: "https://search.com",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		},
 		Body: []byte(`{"urls": ["https://a.com", "https://b.com"]}`),
-	}, nil)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
-
-	meta := domain.DocumentMeta{
-		SdocID:      domain.SdocID("parent123"),
-		SourceID:    domain.SourceID("src1"),
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://search.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
 	}
 
-	docs, err := svc.ParseSearchPage(context.Background(), meta)
+	docs, err := svc.ParseSearchPage(context.Background(), doc)
 
 	assert.NoError(t, err)
 	assert.Len(t, docs, 2)
@@ -150,7 +117,6 @@ func TestService_ParseSearchPage_WhenValidInput_ThenUniqueSdocIDsAndCorrectType(
 
 func TestService_ParseSearchPage_WhenEmptySnippets_ThenEmptySlice(t *testing.T) {
 	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
 	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
 		SourceID:     "src1",
 		DocumentType: domain.DocumentTypeSearchPage,
@@ -158,143 +124,110 @@ func TestService_ParseSearchPage_WhenEmptySnippets_ThenEmptySlice(t *testing.T) 
 			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
 		},
 	}, nil)
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{
+	svc, _ := domain.NewParsingService(mockConfRepo)
+
+	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "parent123",
-			SourceID:    "src1",
+			SdocID:      domain.SdocID("parent123"),
+			SourceID:    domain.SourceID("src1"),
 			Type:        domain.DocumentTypeSearchPage,
 			ExternalURL: "https://search.com",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		},
 		Body: []byte(`{"urls": []}`),
-	}, nil)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
-
-	meta := domain.DocumentMeta{
-		SdocID:      domain.SdocID("parent123"),
-		SourceID:    domain.SourceID("src1"),
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://search.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
 	}
 
-	docs, err := svc.ParseSearchPage(context.Background(), meta)
+	docs, err := svc.ParseSearchPage(context.Background(), doc)
 
 	assert.NoError(t, err)
 	assert.Empty(t, docs)
 }
 
-func TestService_ParseAdvertContent_WhenInvalidMeta_ThenErrValidation(t *testing.T) {
+func TestService_ParseAdvertContent_WhenInvalidDoc_ThenErrValidation(t *testing.T) {
 	confRepo := testutil.NewMockConfigRepository(t)
-	docRepo := testutil.NewMockAdvertsRepository(t)
-	svc, _ := domain.NewParsingService(confRepo, docRepo)
+	svc, _ := domain.NewParsingService(confRepo)
 
-	meta := domain.DocumentMeta{
-		SdocID:      "doc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeDownloadedAdvert,
-		ExternalURL: "",
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:      "doc123",
+			SourceID:    "src1",
+			Type:        domain.DocumentTypeDownloadedAdvert,
+			ExternalURL: "",
+		},
 	}
 
-	doc, err := svc.ParseAdvertContent(context.Background(), meta)
+	result, err := svc.ParseAdvertContent(context.Background(), doc)
 
-	assert.Equal(t, domain.Document{}, doc)
+	assert.Equal(t, domain.Document{}, result)
 	assert.ErrorIs(t, err, domain.ErrValidation)
-}
-
-func TestService_ParseAdvertContent_WhenDocRepoError_ThenWrapsErr(t *testing.T) {
-	confRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
-	svc, _ := domain.NewParsingService(confRepo, mockDocRepo)
-
-	meta := domain.DocumentMeta{
-		SdocID:      "doc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeDownloadedAdvert,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-	mockDocRepo.On("GetDocument", mock.Anything, meta.SdocID, meta.SourceID, domain.DocumentTypeDownloadedAdvert).
-		Return(domain.Document{}, errors.New("db error"))
-
-	doc, err := svc.ParseAdvertContent(context.Background(), meta)
-
-	assert.Equal(t, domain.Document{}, doc)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "db error")
 }
 
 func TestService_ParseAdvertContent_WhenConfigNotFound_ThenErrNotFound(t *testing.T) {
 	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
 	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{}, domain.ErrNotFound)
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{}, nil)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
+	svc, _ := domain.NewParsingService(mockConfRepo)
 
-	meta := domain.DocumentMeta{
-		SdocID:      "doc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeDownloadedAdvert,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-
-	doc, err := svc.ParseAdvertContent(context.Background(), meta)
-
-	assert.Equal(t, domain.Document{}, doc)
-	assert.ErrorIs(t, err, domain.ErrNotFound)
-}
-
-func TestService_ParseAdvertContent_WhenValid_ThenCorrectTypeAndBody(t *testing.T) {
-	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
-	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
-		SourceID:     "src1",
-		DocumentType: domain.DocumentTypeDownloadedAdvert,
-		Params:       []domain.ParsingParam{{Name: "url", JMESPath: "url", Default: ""}},
-	}, nil)
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{
+	doc := domain.Document{
 		DocumentMeta: domain.DocumentMeta{
 			SdocID:      "doc123",
 			SourceID:    "src1",
 			Type:        domain.DocumentTypeDownloadedAdvert,
 			ExternalURL: "https://example.com",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		},
 		Body: []byte(`{"url": "https://example.com/product/123"}`),
-	}, nil)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
-
-	meta := domain.DocumentMeta{
-		SdocID:      "doc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeDownloadedAdvert,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
 	}
 
-	doc, err := svc.ParseAdvertContent(context.Background(), meta)
+	result, err := svc.ParseAdvertContent(context.Background(), doc)
 
-	assert.NoError(t, err)
-	assert.Equal(t, domain.DocumentTypeParsedAdvert, doc.Type)
-	assert.Equal(t, meta.SdocID, doc.SdocID)
+	assert.Equal(t, domain.Document{}, result)
+	assert.ErrorIs(t, err, domain.ErrNotFound)
 }
 
-func TestService_ParseSearchPage_WhenWrongMetaType_ThenErrValidation(t *testing.T) {
-	confRepo := testutil.NewMockConfigRepository(t)
-	docRepo := testutil.NewMockAdvertsRepository(t)
-	svc, _ := domain.NewParsingService(confRepo, docRepo)
+func TestService_ParseAdvertContent_WhenValid_ThenCorrectTypeAndBody(t *testing.T) {
+	mockConfRepo := testutil.NewMockConfigRepository(t)
+	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
+		SourceID:     "src1",
+		DocumentType: domain.DocumentTypeDownloadedAdvert,
+		Params:       []domain.ParsingParam{{Name: "url", JMESPath: "url", Default: ""}},
+	}, nil)
+	svc, _ := domain.NewParsingService(mockConfRepo)
 
-	meta := domain.DocumentMeta{
-		SdocID:      "doc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSurfedAdvert,
-		ExternalURL: "https://example.com",
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:      "doc123",
+			SourceID:    "src1",
+			Type:        domain.DocumentTypeDownloadedAdvert,
+			ExternalURL: "https://example.com",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		},
+		Body: []byte(`{"url": "https://example.com/product/123"}`),
 	}
 
-	docs, err := svc.ParseSearchPage(context.Background(), meta)
+	result, err := svc.ParseAdvertContent(context.Background(), doc)
+
+	assert.NoError(t, err)
+	assert.Equal(t, domain.DocumentTypeParsedAdvert, result.Type)
+	assert.Equal(t, doc.SdocID, result.SdocID)
+}
+
+func TestService_ParseSearchPage_WhenWrongDocType_ThenErrValidation(t *testing.T) {
+	confRepo := testutil.NewMockConfigRepository(t)
+	svc, _ := domain.NewParsingService(confRepo)
+
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:      "doc123",
+			SourceID:    "src1",
+			Type:        domain.DocumentTypeSurfedAdvert,
+			ExternalURL: "https://example.com",
+		},
+	}
+
+	docs, err := svc.ParseSearchPage(context.Background(), doc)
 
 	assert.Nil(t, docs)
 	assert.Error(t, err)
@@ -302,21 +235,22 @@ func TestService_ParseSearchPage_WhenWrongMetaType_ThenErrValidation(t *testing.
 	assert.ErrorIs(t, err, domain.ErrValidation)
 }
 
-func TestService_ParseAdvertContent_WhenWrongMetaType_ThenErrValidation(t *testing.T) {
+func TestService_ParseAdvertContent_WhenWrongDocType_ThenErrValidation(t *testing.T) {
 	confRepo := testutil.NewMockConfigRepository(t)
-	docRepo := testutil.NewMockAdvertsRepository(t)
-	svc, _ := domain.NewParsingService(confRepo, docRepo)
+	svc, _ := domain.NewParsingService(confRepo)
 
-	meta := domain.DocumentMeta{
-		SdocID:      "doc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSurfedAdvert,
-		ExternalURL: "https://example.com",
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:      "doc123",
+			SourceID:    "src1",
+			Type:        domain.DocumentTypeSurfedAdvert,
+			ExternalURL: "https://example.com",
+		},
 	}
 
-	doc, err := svc.ParseAdvertContent(context.Background(), meta)
+	result, err := svc.ParseAdvertContent(context.Background(), doc)
 
-	assert.Equal(t, domain.Document{}, doc)
+	assert.Equal(t, domain.Document{}, result)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "DocumentTypeDownloadedAdvert")
 	assert.ErrorIs(t, err, domain.ErrValidation)
@@ -324,7 +258,6 @@ func TestService_ParseAdvertContent_WhenWrongMetaType_ThenErrValidation(t *testi
 
 func TestService_ParseSearchPage_WhenPropertyHasFewerValuesThanURLs_ThenNoPanicAndSkipsProperty(t *testing.T) {
 	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
 	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
 		SourceID:     "src1",
 		DocumentType: domain.DocumentTypeSearchPage,
@@ -333,20 +266,14 @@ func TestService_ParseSearchPage_WhenPropertyHasFewerValuesThanURLs_ThenNoPanicA
 			{Name: "title", JMESPath: "titles", Default: ""},
 		},
 	}, nil)
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{
-		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "parent123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://search.com",
-		},
-		Body: []byte(`{"urls": ["https://a.com", "https://b.com", "https://c.com"], "titles": ["Only One Title"]}`),
-	}, nil)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
+	svc, _ := domain.NewParsingService(mockConfRepo)
 
-	meta := testutil.MustDocumentMeta("https://search.com", "parent123", "src1")
+	doc := domain.Document{
+		DocumentMeta: testutil.MustDocumentMeta("https://search.com", "parent123", "src1"),
+		Body:         []byte(`{"urls": ["https://a.com", "https://b.com", "https://c.com"], "titles": ["Only One Title"]}`),
+	}
 
-	docs, err := svc.ParseSearchPage(context.Background(), meta)
+	docs, err := svc.ParseSearchPage(context.Background(), doc)
 
 	assert.NoError(t, err)
 	assert.Len(t, docs, 3)
@@ -357,7 +284,6 @@ func TestService_ParseSearchPage_WhenPropertyHasFewerValuesThanURLs_ThenNoPanicA
 
 func TestService_ParseSearchPage_WhenSecondCall_ThenConfigRepoNotCalledAgain(t *testing.T) {
 	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
 	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
 		SourceID:     "src1",
 		DocumentType: domain.DocumentTypeSearchPage,
@@ -365,22 +291,16 @@ func TestService_ParseSearchPage_WhenSecondCall_ThenConfigRepoNotCalledAgain(t *
 			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
 		},
 	}, nil).Once()
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{
-		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "parent123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://search.com",
-		},
-		Body: []byte(`{"urls": ["https://a.com"]}`),
-	}, nil).Times(2)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
+	svc, _ := domain.NewParsingService(mockConfRepo)
 
-	meta := testutil.MustDocumentMeta("https://search.com", "parent123", "src1")
+	doc := domain.Document{
+		DocumentMeta: testutil.MustDocumentMeta("https://search.com", "parent123", "src1"),
+		Body:         []byte(`{"urls": ["https://a.com"]}`),
+	}
 
-	_, err1 := svc.ParseSearchPage(context.Background(), meta)
+	_, err1 := svc.ParseSearchPage(context.Background(), doc)
 	assert.NoError(t, err1)
-	_, err2 := svc.ParseSearchPage(context.Background(), meta)
+	_, err2 := svc.ParseSearchPage(context.Background(), doc)
 	assert.NoError(t, err2)
 
 	mockConfRepo.AssertExpectations(t)
@@ -388,7 +308,6 @@ func TestService_ParseSearchPage_WhenSecondCall_ThenConfigRepoNotCalledAgain(t *
 
 func TestService_ParseSearchPage_WhenConcurrentFirstLoad_ThenConfigLoadedOnce(t *testing.T) {
 	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
 	mockConfRepo.EXPECT().GetConfig(mock.Anything, mock.Anything, mock.Anything).Return(domain.ParsingConfig{
 		SourceID:     "src1",
 		DocumentType: domain.DocumentTypeSearchPage,
@@ -396,23 +315,17 @@ func TestService_ParseSearchPage_WhenConcurrentFirstLoad_ThenConfigLoadedOnce(t 
 			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
 		},
 	}, nil).Once()
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{
-		DocumentMeta: domain.DocumentMeta{
-			SdocID:      "parent123",
-			SourceID:    "src1",
-			Type:        domain.DocumentTypeSearchPage,
-			ExternalURL: "https://search.com",
-		},
-		Body: []byte(`{"urls": ["https://a.com"]}`),
-	}, nil).Times(3)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
+	svc, _ := domain.NewParsingService(mockConfRepo)
 
-	meta := testutil.MustDocumentMeta("https://search.com", "parent123", "src1")
+	doc := domain.Document{
+		DocumentMeta: testutil.MustDocumentMeta("https://search.com", "parent123", "src1"),
+		Body:         []byte(`{"urls": ["https://a.com"]}`),
+	}
 
 	errCh := make(chan error, 3)
 	for range 3 {
 		go func() {
-			_, err := svc.ParseSearchPage(context.Background(), meta)
+			_, err := svc.ParseSearchPage(context.Background(), doc)
 			errCh <- err
 		}()
 	}
@@ -425,23 +338,26 @@ func TestService_ParseSearchPage_WhenConcurrentFirstLoad_ThenConfigLoadedOnce(t 
 	mockConfRepo.AssertExpectations(t)
 }
 
-func TestService_GetJMESParser_WhenCtxCancelledBefore_ThenReturnsCtxErr(t *testing.T) {
+func TestService_ParseSearchPage_WhenCtxCancelled_ThenReturnsCtxErr(t *testing.T) {
 	mockConfRepo := testutil.NewMockConfigRepository(t)
-	mockDocRepo := testutil.NewMockAdvertsRepository(t)
-	mockDocRepo.EXPECT().GetDocument(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(domain.Document{}, context.Canceled)
-	svc, _ := domain.NewParsingService(mockConfRepo, mockDocRepo)
+	svc, _ := domain.NewParsingService(mockConfRepo)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := svc.ParseSearchPage(ctx, domain.DocumentMeta{
-		SdocID:      "doc123",
-		SourceID:    "src1",
-		Type:        domain.DocumentTypeSearchPage,
-		ExternalURL: "https://example.com",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	})
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:      "doc123",
+			SourceID:    "src1",
+			Type:        domain.DocumentTypeSearchPage,
+			ExternalURL: "https://example.com",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		},
+		Body: []byte(`{"urls": ["https://a.com"]}`),
+	}
+
+	_, err := svc.ParseSearchPage(ctx, doc)
 
 	assert.ErrorIs(t, err, context.Canceled)
 }

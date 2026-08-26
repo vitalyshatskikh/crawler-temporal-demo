@@ -85,9 +85,9 @@
 
 ## 11. Unit Tests — parsing/parser
 
-- [x] 11.1 `Service_New_WhenNilConfRepo_ThenErrValidation`
-- [x] 11.2 `Service_New_WhenNilDocRepo_ThenErrValidation`
-- [x] 11.3 `Service_New_WhenBothValid_ThenNonNilService`
+- [x] 11.1 `NewParsingServiceWhenNilConfRepo_ThenErrValidation`
+- [x] 11.2 `NewParsingServiceWhenNilDocRepo_ThenErrValidation`
+- [x] 11.3 `NewParsingServiceWhenBothValid_ThenNonNilService`
 - [x] 11.4 `Service_ParseSearchPage_WhenInvalidMeta_ThenErrValidation`
 - [x] 11.5 `Service_ParseSearchPage_WhenDocRepoError_ThenWrapsErr`
 - [x] 11.6 `Service_ParseSearchPage_WhenConfigMissing_ThenErrNotFound`
