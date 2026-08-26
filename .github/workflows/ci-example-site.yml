@@ -47,37 +47,41 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
-          go-version-file: example-site/go.mod
+          go-version: '1.26'
           cache: true
-
-      - name: Add GOPATH/bin to PATH
-        run: echo "$GOPATH/bin" >> "$GITHUB_PATH"
 
       - name: Export postgres host
         run: echo "POSTGRES_HOSTS=localhost:5432" >> "$GITHUB_ENV"
 
       - name: Build
+        working-directory: example-site
         run: go build ./...
 
       - name: Lint
+        working-directory: example-site
         run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 && golangci-lint run ./...
 
       - name: Test Unit
-        run: go install gotest.tools/gotestsum@v1.12.0 && gotestsum -- -v -race -coverprofile=coverage.out ./...
+        working-directory: example-site
+        run: go install gotest.tools/gotestsum@v1.13.0 && gotestsum -- -v -race -coverprofile=coverage.out ./...
 
       - name: Test Integration
+        working-directory: example-site
         run: |
-          cd example-site/cmd/migrator && go run . up
+          go run cmd/migrator/*.go up
           gotestsum -- -tags=integration -v -race -coverprofile=coverage-int.out ./internal/infrastructure/repositories/...
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
-          files: coverage.out,coverage-int.out
+          files: example-site/coverage.out,example-site/coverage-int.out
           flags: example-site
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}

@@ -55,10 +55,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
@@ -90,8 +92,9 @@ jobs:
             -m integration -v
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: crawler/coverage-py.xml,crawler/coverage-py-int.xml
           flags: crawler-py
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}

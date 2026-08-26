@@ -29,20 +29,22 @@ Each component gets its own `.github/workflows/ci-<name>.yml` file (ci-example-s
 - Single workflow file with three jobs: Cleaner to manage but less independent. Rejected per user preference.
 - Reusable workflow (`_component-ci.yml` called three times): Most DRY but adds indirection. Rejected per user preference.
 
-### Decision: Use `go-version-file` in setup-go
+### Decision: Pin Go version explicitly in setup-go
 
 ```yaml
-- uses: actions/setup-go@v5
+- uses: actions/setup-go@v7
   with:
-    go-version-file: example-site/go.mod  # or crawler/go.mod
+    go-version: '1.26'
     cache: true
 ```
 
-**Rationale:** Reads the Go version directly from the module's go.mod file. No hardcoded version drift when go.mod is updated.
+**Rationale:** `actions/setup-go@v7` with `go-version-file` was rejected after it silently fell back to the runner's preinstalled 1.24.13. Pinning `go-version: '1.26'` (major.minor only) resolves to the latest cached 1.26.x on the runner at install time — more future-proof than pinning an exact patch. go.mod's `go 1.26.2` directive remains the source of truth for the codebase's minimum required toolchain.
 
 **Alternatives considered:**
-- Hardcode `go 1.26`: Explicit but drifts when go.mod updates. Rejected.
-- Read from `.go-version` file: Requires extra file to maintain. Rejected.
+- `go-version: '1.26.6'` exact patch: was the runner's newest cached version, but pinning exact patch requires re-bumping when go.mod moves to a newer patch or go.work is updated. `'1.26'` is more future-proof.
+- `go-version-file: <module>/go.mod`: original choice; fell back to preinstalled 1.24.13. Rejected.
+- Add `GOTOOLCHAIN: auto` to build steps instead of changing setup-go: lets Go auto-download the toolchain, but obscures the failure mode and depends on the runner reaching `go.dev/dl/` mid-build.
+- Read from a `.go-version` file: requires an extra file to maintain. Rejected.
 
 ### Decision: Install Poetry via pip
 
@@ -126,12 +128,14 @@ concurrency:
 |------|------------|
 | `CODECOV_TOKEN` secret not set, uploads silently fail | Document prerequisite in tasks. Workflow will still complete; codecov step will show as success but upload will fail silently. |
 | golangci-lint version drift between local and CI | `go install` pins version; Makefile also pins. Keep them in sync when upgrading. |
-| golangci-lint binary not on PATH after `go install` | Add `echo "$GOPATH/bin" >> "$GITHUB_PATH"` step after installing, or use full path in lint step. |
+| CI pin `'1.26'` resolves to latest 1.26.x in runner cache | If a new patch (e.g. 1.26.7) appears in the runner's cache and the project needs its features, bump both workflow files to `'1.26.7'` or back to `'1.26'` to pick up the newer patch. |
+| `go build` shadowed by preinstalled 1.24.13 toolchain | The "Add GOPATH/bin to PATH" step was removed; it caused `go` to resolve to the runner's preinstalled 1.24.13 instead of the freshly installed version. Without this step the toolchain is not overridden. |
 | Poetry version not pinned | `pip install poetry` gets latest stable. Consider pinning if behavior diverges across runs. |
 | crawler migrations path overlap | Both crawler-py and crawler-go use `crawler/migrations/` but alembic (Python) vs golang-migrate (Go) are incompatible. Ensure path filters correctly separate: crawler-py triggers on `crawler/migrations/**` (alembic INI references it), crawler-go triggers on `crawler/parser/**` which has its own go.mod. |
 | Python 3.13 availability in GitHub Actions | `setup-python` defaults to latest. Explicitly specify `python-version: '3.13'` to match pyproject.toml. |
 | crawler-go integration tests do not exist yet | test-integration stage is a no-op that completes immediately; no postgres service or migrations are run for crawler-go. Integration tests will be added in a future change. |
 | POSTGRES_HOSTS env var not set | Export `POSTGRES_HOSTS=localhost:5432` (example-site, crawler-go) and `POSTGRES__HOSTS=localhost:5432` (crawler-py) before running test commands. |
+| Go workspace root causes `go build ./...` to fail | Go commands must run inside the module directory via `working-directory:`; running from repo root fails because `./...` doesn't resolve within a workspace. Coverage files land inside the module subdirectory. |
 
 ## Open Questions
 

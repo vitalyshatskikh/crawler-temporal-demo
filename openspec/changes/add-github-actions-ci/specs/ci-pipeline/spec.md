@@ -69,15 +69,18 @@ The test-integration stage for each component SHALL use a postgres service conta
 
 ### Requirement: Coverage report generation
 
-The test stages SHALL produce coverage reports in codecov-compatible formats. Go test stages SHALL produce coverage files named `coverage.out` and `coverage-int.out`. Python pytest stages SHALL produce coverage files named `coverage-py.xml` and `coverage-py-int.xml`.
+The test stages SHALL produce coverage reports in codecov-compatible formats. Go test stages SHALL produce coverage files at `example-site/coverage.out` and `example-site/coverage-int.out` for example-site, and `crawler/coverage.out` for crawler-go. Python pytest stages SHALL produce coverage files at `crawler/coverage-py.xml` and `crawler/coverage-py-int.xml`.
 
 #### Scenario: Go unit tests produce coverage
-- **WHEN** the test-unit stage runs for a Go component
-- **THEN** a file named `coverage.out` SHALL be produced with Go coverage profile data
+- **WHEN** the test-unit stage runs for example-site
+- **THEN** a file named `example-site/coverage.out` SHALL be produced with Go coverage profile data
+- **WHEN** the test-unit stage runs for crawler-go
+- **THEN** a file named `crawler/coverage.out` SHALL be produced with Go coverage profile data
 
 #### Scenario: Go integration tests produce separate coverage
-- **WHEN** the test-integration stage runs for a Go component
-- **THEN** a file named `coverage-int.out` SHALL be produced with Go coverage profile data
+- **WHEN** the test-integration stage runs for example-site
+- **THEN** a file named `example-site/coverage-int.out` SHALL be produced with Go coverage profile data
+- **NOTE**: crawler-go has no integration tests; no `coverage-int.out` is produced for crawler-go
 
 #### Scenario: Python unit tests produce coverage XML
 - **WHEN** the test-unit stage runs for crawler-py
@@ -93,15 +96,16 @@ Each component workflow SHALL upload its coverage reports to Codecov using the o
 
 #### Scenario: Codecov upload on example-site workflow
 - **WHEN** the example-site workflow completes test stages
-- **THEN** coverage files `coverage.out` and `coverage-int.out` SHALL be uploaded to Codecov with flag `example-site`
+- **THEN** coverage files `example-site/coverage.out` and `example-site/coverage-int.out` SHALL be uploaded to Codecov with flag `example-site`
 
 #### Scenario: Codecov upload on crawler-py workflow
 - **WHEN** the crawler-py workflow completes test stages
-- **THEN** coverage files `coverage-py.xml` and `coverage-py-int.xml` SHALL be uploaded to Codecov with flag `crawler-py`
+- **THEN** coverage files `crawler/coverage-py.xml` and `crawler/coverage-py-int.xml` SHALL be uploaded to Codecov with flag `crawler-py`
 
 #### Scenario: Codecov upload on crawler-go workflow
 - **WHEN** the crawler-go workflow completes test stages
-- **THEN** coverage files `coverage.out` and `coverage-int.out` SHALL be uploaded to Codecov with flag `crawler-go`
+- **THEN** coverage file `crawler/coverage.out` SHALL be uploaded to Codecov with flag `crawler-go`
+- **NOTE**: crawler-go has no integration tests; only unit coverage (`coverage.out`) is uploaded
 
 ### Requirement: Path-based job filtering
 

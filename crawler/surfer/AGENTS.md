@@ -2,7 +2,7 @@
 
 This file provides guidance to agents when working with code in this repository.
 
-## ! Important !
+## !!! Important !!!
 
 **Never** mention agent's name, model and vendor in commit messages or generated code or any other materials
 
