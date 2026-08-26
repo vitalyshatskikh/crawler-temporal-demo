@@ -1,0 +1,60 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range: [70, 90]
+
+flags:
+  example-site:
+    paths:
+      - example-site/
+    carryforward: true
+  crawler-py:
+    paths:
+      - crawler/
+    carryforward: true
+  crawler-go:
+    paths:
+      - crawler/parser/
+    carryforward: true
+
+component_management:
+  default_rules:
+    carryforward: true
+  groups:
+    - name: example-site-unit
+      paths:
+        - example-site/**
+      flags:
+        - example-site
+    - name: example-site-integration
+      paths:
+        - example-site/**
+      flags:
+        - example-site
+    - name: crawler-py-unit
+      paths:
+        - crawler/shared/**
+        - crawler/surfer/**
+        - crawler/downloader/**
+      flags:
+        - crawler-py
+    - name: crawler-py-integration
+      paths:
+        - crawler/shared/**
+        - crawler/surfer/**
+        - crawler/downloader/**
+      flags:
+        - crawler-py
+    - name: crawler-go-unit
+      paths:
+        - crawler/parser/**
+      flags:
+        - crawler-go
+    - name: crawler-go-integration
+      paths:
+        - crawler/parser/**
+      flags:
+        - crawler-go

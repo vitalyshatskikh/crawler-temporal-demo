@@ -1,0 +1,83 @@
+name: CI Example Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'example-site/**'
+      - 'go.work'
+      - 'go.work.sum'
+      - '.github/workflows/ci-example-site.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'example-site/**'
+      - 'go.work'
+      - 'go.work.sum'
+      - '.github/workflows/ci-example-site.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  example-site-ci:
+    name: example-site
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: example-site
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: example-site/go.mod
+          cache: true
+
+      - name: Add GOPATH/bin to PATH
+        run: echo "$GOPATH/bin" >> "$GITHUB_PATH"
+
+      - name: Export postgres host
+        run: echo "POSTGRES_HOSTS=localhost:5432" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: go build ./...
+
+      - name: Lint
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 && golangci-lint run ./...
+
+      - name: Test Unit
+        run: go install gotest.tools/gotestsum@v1.12.0 && gotestsum -- -v -race -coverprofile=coverage.out ./...
+
+      - name: Test Integration
+        run: |
+          cd example-site/cmd/migrator && go run . up
+          gotestsum -- -tags=integration -v -race -coverprofile=coverage-int.out ./internal/infrastructure/repositories/...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.out,coverage-int.out
+          flags: example-site
+          fail_ci_if_error: false

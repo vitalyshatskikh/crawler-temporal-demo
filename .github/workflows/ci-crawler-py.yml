@@ -1,0 +1,97 @@
+name: CI Crawler Python
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crawler/**'
+      - '!crawler/parser/**'
+      - 'crawler/pyproject.toml'
+      - 'crawler/poetry.lock'
+      - 'crawler/alembic.ini'
+      - 'crawler/Dockerfile.migrate'
+      - 'crawler/migrations/**'
+      - '.github/workflows/ci-crawler-py.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crawler/**'
+      - '!crawler/parser/**'
+      - 'crawler/pyproject.toml'
+      - 'crawler/poetry.lock'
+      - 'crawler/alembic.ini'
+      - 'crawler/Dockerfile.migrate'
+      - 'crawler/migrations/**'
+      - '.github/workflows/ci-crawler-py.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  crawler-py-ci:
+    name: crawler-py
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: crawler
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        run: python -m pip install poetry
+
+      - name: Export postgres host
+        run: echo "POSTGRES__HOSTS=localhost:5432" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: cd crawler && poetry install --no-interaction
+
+      - name: Lint
+        run: cd crawler && poetry run pytest -m linting -v
+
+      - name: Test Unit
+        run: |
+          cd crawler && poetry run pytest \
+            --cov=shared --cov=surfer --cov=downloader \
+            --cov-report=xml:coverage-py.xml \
+            -m 'not linting and not integration' -v
+
+      - name: Test Integration
+        run: |
+          cd crawler && poetry run alembic upgrade head && \
+          poetry run pytest \
+            --cov=shared --cov=surfer --cov=downloader \
+            --cov-report=xml:coverage-py-int.xml \
+            -m integration -v
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: crawler/coverage-py.xml,crawler/coverage-py-int.xml
+          flags: crawler-py
+          fail_ci_if_error: false
