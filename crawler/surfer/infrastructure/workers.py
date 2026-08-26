@@ -4,7 +4,7 @@ import temporalio.client
 import temporalio.worker
 
 from surfer.application import activities, consts, workflows
-from surfer.domain import adverts, surfing
+from surfer.domain import surfing
 
 
 class Worker(abc.ABC):
@@ -18,10 +18,8 @@ class SurfingWorker(Worker):
         self,
         client: temporalio.client.Client,
         surf_config_repo: surfing.ISurfingRepository,
-        adverts_repo: adverts.IAdvertsRepository,
     ) -> None:
         self._surf_config_repo = activities.SurfConfigRepo(surf_config_repo)
-        self._adverts_repo = activities.AdvertsRepo(adverts_repo)
         self._w = temporalio.worker.Worker(
             client=client,
             task_queue=consts.QueueName.SURFING_TASK,
@@ -32,7 +30,6 @@ class SurfingWorker(Worker):
             ],
             activities=[
                 self._surf_config_repo.get_surf_params,
-                self._adverts_repo.get_documents_meta,
             ],
         )
 

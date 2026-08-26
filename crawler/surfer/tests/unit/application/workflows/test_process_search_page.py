@@ -1,5 +1,6 @@
 
 
+import datetime as dt
 import hashlib
 import typing as tp
 
@@ -8,12 +9,11 @@ import temporalio.client
 import temporalio.testing
 import temporalio.worker
 
-from surfer.application import activities, consts
+from surfer.application import consts
 from surfer.application.workflows.process_search_page import (
     ProcessSearchPage,
 )
 from surfer.domain.adverts import models as adverts_models
-from surfer.domain.adverts import repositories as adverts_repo
 from surfer.tests._factories import (
     DocMetaFactory,
     ProcessSearchPageInFactory,
@@ -41,11 +41,7 @@ async def test_run__when_parse_returns_empty__then_no_advert_children(
     await make_workers([
         WorkerSpec(
             workflows=[ProcessSearchPage],
-            activities=[
-                activities.AdvertsRepo(
-                    adverts_repo.DummyAdvertsRepository(result={}),
-                ).get_documents_meta,
-            ],
+            activities=[],
             task_queue=consts.QueueName.SURFING_TASK,
             interceptors=[WorkflowMockInterceptor()],
         ),
@@ -68,6 +64,7 @@ async def test_run__when_parse_returns_empty__then_no_advert_children(
         "source_id": in_.surf_params.source_id,  # type: ignore[attr-defined]
         "type": adverts_models.DocumentType.SEARCH_PAGE.value,
         "external_url": in_.page_url,
+        "update_interval_sec": in_.surf_params.update_interval_sec,  # type: ignore[attr-defined]
     }
 
 
@@ -76,26 +73,17 @@ async def test_run__when_parse_returns_sdocs__then_starts_advert_children(
     make_workers: tp.Callable[[list[WorkerSpec]], tp.Awaitable[list[temporalio.worker.Worker]]],
 ) -> None:
     clear_mocks()
-    sdoc_ids = [adverts_models.SdocID('1'), adverts_models.SdocID('2')]
     doc_meta_1 = DocMetaFactory(sdoc_id='1')
     doc_meta_2 = DocMetaFactory(sdoc_id='2')
-    documents_meta = {
-        adverts_models.SdocID('1'): doc_meta_1,
-        adverts_models.SdocID('2'): doc_meta_2,
-    }
     set_mock(consts.WorkflowName.DOWNLOAD_SEARCH_PAGE, result={})
-    set_mock(consts.ActivityName.PARSE_SEARCH_PAGE, result=sdoc_ids)
+    set_mock(consts.ActivityName.PARSE_SEARCH_PAGE, result=[doc_meta_1, doc_meta_2])
     set_mock(consts.WorkflowName.PROCESS_ADVERT, result=None)
     in_ = ProcessSearchPageInFactory()
 
     await make_workers([
         WorkerSpec(
             workflows=[ProcessSearchPage],
-            activities=[
-                activities.AdvertsRepo(
-                    adverts_repo.DummyAdvertsRepository(result=documents_meta),  # type: ignore[arg-type]
-                ).get_documents_meta,
-            ],
+            activities=[],
             task_queue=consts.QueueName.SURFING_TASK,
             interceptors=[WorkflowMockInterceptor()],
         ),
@@ -121,6 +109,7 @@ async def test_run__when_parse_returns_sdocs__then_starts_advert_children(
         "source_id": in_.surf_params.source_id,  # type: ignore[attr-defined]
         "type": adverts_models.DocumentType.SEARCH_PAGE.value,
         "external_url": in_.page_url,
+        "update_interval_sec": in_.surf_params.update_interval_sec,  # type: ignore[attr-defined]
     }
 
 
@@ -138,11 +127,7 @@ async def test_run__when_download_fails__then_propagates_error(
     await make_workers([
         WorkerSpec(
             workflows=[ProcessSearchPage],
-            activities=[
-                activities.AdvertsRepo(
-                    adverts_repo.DummyAdvertsRepository(result={}),
-                ).get_documents_meta,
-            ],
+            activities=[],
             task_queue=consts.QueueName.SURFING_TASK,
             interceptors=[WorkflowMockInterceptor()],
         ),
@@ -174,11 +159,7 @@ async def test_run__when_parse_fails__then_propagates_error(
     await make_workers([
         WorkerSpec(
             workflows=[ProcessSearchPage],
-            activities=[
-                activities.AdvertsRepo(
-                    adverts_repo.DummyAdvertsRepository(result={}),
-                ).get_documents_meta,
-            ],
+            activities=[],
             task_queue=consts.QueueName.SURFING_TASK,
             interceptors=[WorkflowMockInterceptor()],
         ),
@@ -193,3 +174,35 @@ async def test_run__when_parse_fails__then_propagates_error(
         )
 
     assert_workflow_failure_message(excinfo, 'parse boom')
+
+
+async def test_run__when_doc_meta_recently_updated__then_skips_advert_children(
+    env: temporalio.testing.WorkflowEnvironment,
+    make_workers: tp.Callable[[list[WorkerSpec]], tp.Awaitable[list[temporalio.worker.Worker]]],
+) -> None:
+    clear_mocks()
+    recent_ts = dt.datetime.now(tz=dt.UTC)
+    recent_1 = DocMetaFactory(sdoc_id='1', created_at=recent_ts, updated_at=recent_ts)
+    recent_2 = DocMetaFactory(sdoc_id='2', created_at=recent_ts, updated_at=recent_ts)
+    set_mock(consts.WorkflowName.DOWNLOAD_SEARCH_PAGE, result={})
+    set_mock(consts.ActivityName.PARSE_SEARCH_PAGE, result=[recent_1, recent_2])
+    set_mock(consts.WorkflowName.PROCESS_ADVERT, result=None)
+    in_ = ProcessSearchPageInFactory()
+
+    await make_workers([
+        WorkerSpec(
+            workflows=[ProcessSearchPage],
+            activities=[],
+            task_queue=consts.QueueName.SURFING_TASK,
+            interceptors=[WorkflowMockInterceptor()],
+        ),
+    ])
+
+    await env.client.execute_workflow(  # type: ignore[misc]
+        ProcessSearchPage.run,
+        in_,
+        id='test-psp-recent-skip',
+        task_queue=consts.QueueName.SURFING_TASK,
+    )
+
+    assert len(get_mock_calls(consts.WorkflowName.PROCESS_ADVERT)) == 0

@@ -11,23 +11,6 @@ from surfer.domain import adverts
 logger = logging.getLogger(__name__)
 
 
-async def _raise_for_status(response: aiohttp.ClientResponse) -> None:
-    if response.status >= http.HTTPStatus.INTERNAL_SERVER_ERROR:
-        raise errors.DownloaderError(
-            "server error: status=%d reason=%s url=%s",
-            response.status,
-            response.reason,
-            str(response.url),
-        )
-    if response.status >= http.HTTPStatus.BAD_REQUEST and response.status != http.HTTPStatus.NOT_FOUND:
-        raise errors.ValidationError(
-            "client error: status=%d reason=%s url=%s",
-            response.status,
-            response.reason,
-            str(response.url),
-        )
-
-
 class WebDownloader:
     def __init__(
         self,
@@ -61,3 +44,10 @@ class WebDownloader:
 
     async def aclose(self) -> None:
         await self._http_client.close()
+
+
+async def _raise_for_status(response: aiohttp.ClientResponse) -> None:
+    if response.status >= http.HTTPStatus.INTERNAL_SERVER_ERROR:
+        raise errors.DownloaderError("server error", response.status, response.reason, str(response.url))
+    if response.status >= http.HTTPStatus.BAD_REQUEST and response.status != http.HTTPStatus.NOT_FOUND:
+        raise errors.ValidationError("client error", response.status, response.reason, str(response.url))

@@ -1,3 +1,4 @@
+import datetime as dt
 import hashlib
 
 import pydantic
@@ -6,7 +7,7 @@ from temporalio import workflow
 # Pass the activities through the sandbox
 # https://github.com/temporalio/sdk-python#workflow-sandbox
 with workflow.unsafe.imports_passed_through():
-    from surfer.application import activities, config, consts
+    from surfer.application import config, consts
     from surfer.application.workflows.models import DownloadIn
     from surfer.domain import adverts, surfing
 
@@ -32,7 +33,7 @@ class ProcessSearchPage:
 
         download_wf_id = (
             f"{consts.WorkflowName.DOWNLOAD_SEARCH_PAGE}/{in_.surf_params.name}"
-            f"/branch{in_.branch_idx}_page{in_.page_num}"
+            f"/branch{in_.branch_idx}/page{in_.page_num}"
         )
         now = workflow.now()
         page_doc_meta = adverts.DocumentMeta(
@@ -42,6 +43,7 @@ class ProcessSearchPage:
             source_id=in_.surf_params.source_id,
             type=adverts.DocumentType.SEARCH_PAGE,
             external_url=in_.page_url,
+            update_interval_sec=in_.surf_params.update_interval_sec,
         )
         page_meta = await workflow.execute_child_workflow(
             consts.WorkflowName.DOWNLOAD_SEARCH_PAGE,
@@ -55,7 +57,7 @@ class ProcessSearchPage:
             execution_timeout=in_.surfer_config.download_search_page_wf_timeout,
         )
 
-        sdoc_ids = await workflow.execute_activity(
+        documents_meta: list[adverts.DocumentMeta] = await workflow.execute_activity(
             consts.ActivityName.PARSE_SEARCH_PAGE,
             page_meta,
             task_queue=consts.QueueName.PARSING,
@@ -63,15 +65,13 @@ class ProcessSearchPage:
             retry_policy=in_.surfer_config.parse_search_page_retry.to_retry_policy(),
         )
 
-        documents_meta = await workflow.execute_local_activity_method(
-            activities.AdvertsRepo.get_documents_meta,
-            sdoc_ids,
-            schedule_to_close_timeout=in_.surfer_config.repo_request_timeout,
-            retry_policy=in_.surfer_config.repo_request_retry.to_retry_policy(),
-        )
-
-        for sdoc_id, doc_meta in documents_meta.items():
-            wf_id = f"{consts.WorkflowName.PROCESS_ADVERT}/{in_.surf_params.name}/sdocid/{sdoc_id}"
+        processed = 0
+        skipped = 0
+        for doc_meta in documents_meta:
+            if doc_meta.updated_at + dt.timedelta(seconds=doc_meta.update_interval_sec) > workflow.now():
+                skipped += 1
+                continue
+            wf_id = f"{consts.WorkflowName.PROCESS_ADVERT}/{in_.surf_params.name}/sdocid/{doc_meta.sdoc_id}"
             await workflow.start_child_workflow(
                 process_advert.ProcessAdvert.run,
                 process_advert.ProcessAdvertIn(
@@ -84,4 +84,16 @@ class ProcessSearchPage:
                 parent_close_policy=workflow.ParentClosePolicy.ABANDON,  # fire and forget
                 execution_timeout=in_.surfer_config.process_advert_wf_timeout,
             )
+            processed += 1
+
+        workflow.logger.info(
+            "documents processed",
+            extra={
+                "surf_config_name": in_.surf_params.name,
+                "page_url": in_.page_url,
+                "processed": processed,
+                "skipped": skipped,
+                "total": len(documents_meta),
+            },
+        )
 

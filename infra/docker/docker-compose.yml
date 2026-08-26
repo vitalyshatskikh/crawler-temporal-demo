@@ -4,7 +4,7 @@ services:
     container_name: temporal-postgresql
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5532:5432"
     environment:
       POSTGRES_PASSWORD: temporal
       POSTGRES_USER: temporal

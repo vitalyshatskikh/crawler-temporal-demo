@@ -51,19 +51,19 @@ poetry run mypy surfer
 
 ```
 domain/
-├── adverts/           # Adverts domain models + repository contract
+├── adverts/           # Adverts domain models
 ├── parsing/          # Parser contract (IParser) + DummyParser (currently unused)
 └── surfing/          # Surfing Params/TemplateContext models, URLGenerator, ISurfingRepository
 application/          # Temporal workflow defns, activity classes, config, consts
-infrastructure/       # Worker bootstrap (4 worker classes), PGAdvertsRepo + PGConfigRepository stubs
+infrastructure/       # Worker bootstrap (3 worker classes), PGConfigRepository stub
 ```
 
 **`application/` contents:**
 - Temporal workflow defns: SearchAdverts, ProcessSearchBranch, ProcessSearchPage, ProcessAdvert
-- Port-bound activity classes: SurfConfigRepo (ISurfingRepository → GetSurfParams), AdvertsRepo (IAdvertsRepository → GetDocumentsMeta)
+- Port-bound activity classes: SurfConfigRepo (ISurfingRepository → GetSurfParams)
 - Module-level dummy parse activities: dummy_parse_search_page, dummy_parse_advert_content (marked TODO to extract into separate app)
 - SurferConfig (timing/retry knobs); RetryConfig lives in shared/py/settings.py
-- Consts: QueueName (6), ActivityName (4), WorkflowName (6 = 4 surfer + 2 downloader-owned) — all in application/consts.py
+- Consts: QueueName (6), ActivityName (3), WorkflowName (6 = 4 surfer + 2 downloader-owned) — all in application/consts.py
 
 ---
 
@@ -120,7 +120,7 @@ from surfer.domain.surfing import models
 
 - **Framework:** pytest + pytest-asyncio (`asyncio_mode = "auto"`)
 - **Time:** `temporalio.testing.WorkflowEnvironment.start_time_skipping()` (NOT freezegun; Temporal simulates time)
-- **Test doubles:** port dummies (`DummyAdvertsRepository` in `domain/adverts/repositories.py`, `DummyConfigRepository` in `domain/surfing/repositories.py`) and module-level dummy parse activities (`dummy_parse_search_page`, `dummy_parse_advert_content` in `application/activities.py`); override pytest fixtures in the test module to inject raising variants
+- **Test doubles:** port dummies (`DummyConfigRepository` in `domain/surfing/repositories.py`) and module-level dummy parse activities (`dummy_parse_search_page`, `dummy_parse_advert_content` in `application/activities.py`); override pytest fixtures in the test module to inject raising variants
 - **Test data builders:** live in `tests/_factories.py`; `conftest.py` only holds fixtures
 - **Test interceptors:** `tests/_interceptors.py` (`WorkflowMockInterceptor`, `set_mock`/`clear_mocks`/`get_mock_calls`, `MockHandle`) — mocks child workflows and remote activities; `tests/linting/test_linting.py` runs ruff + mypy under the `linting` marker
 - **Test layout:** `tests/unit/application/workflows/` for workflow tests, `tests/unit/domain/surfing/` for domain-model/URL-generator tests; module-level async functions (NOT class-wrapped); `test_<method>__when_<cond>__then_<outcome>` naming still applies

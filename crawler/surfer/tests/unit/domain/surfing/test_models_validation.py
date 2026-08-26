@@ -39,6 +39,7 @@ from surfer.domain import surfing
                 "source_id": "x",
                 "url_template": "https://x/{{page}}",
                 "max_pages": 1,
+                "update_interval_sec": 86400,
             },
             False,
         ),
@@ -65,3 +66,25 @@ def test_template_context_defaults() -> None:
     # Then
     assert ctx.values == {}
     assert ctx.comment == ""
+
+
+@pytest.mark.parametrize(
+    "update_interval_sec",
+    [0, -1],
+)
+def test_params__when_nonpositive_update_interval_sec__then_validation_error(
+    update_interval_sec: int,
+) -> None:
+    # Given
+    payload = {
+        "id": 1,
+        "name": "n",
+        "source_id": "x",
+        "url_template": "https://x/{{page}}",
+        "max_pages": 1,
+        "update_interval_sec": update_interval_sec,
+    }
+
+    # When/Then
+    with pytest.raises(pydantic.ValidationError):
+        surfing.Params(**payload)

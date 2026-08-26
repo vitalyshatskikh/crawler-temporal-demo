@@ -18,6 +18,7 @@ class Params(pydantic.BaseModel):
     url_template: str = pydantic.Field(..., min_length=1)
     url_template_params: list[TemplateContext] = pydantic.Field(default_factory=list)
     max_pages: int = pydantic.Field(..., gt=0)
+    update_interval_sec: int = pydantic.Field(..., gt=0)
 
     @pydantic.field_validator('url_template_params', mode='after')
     @classmethod

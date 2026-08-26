@@ -40,6 +40,7 @@ class DownloaderDocMetaFactory(factory.Factory):
     external_url = factory.LazyAttribute(
         lambda o: f"https://example.com/advert/{o.sdoc_id}"
     )
+    update_interval_sec = 86400
 
 
 def assert_workflow_failure_message(
