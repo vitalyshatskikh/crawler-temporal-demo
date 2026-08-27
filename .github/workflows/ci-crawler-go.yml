@@ -60,7 +60,7 @@ jobs:
         run: echo 'no integration tests for crawler-go yet' && true
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: crawler/coverage.out
           flags: crawler-go
