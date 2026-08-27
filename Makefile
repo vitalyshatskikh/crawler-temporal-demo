@@ -117,7 +117,7 @@ crawler-go-test-integration:
 		&& go tool gotestsum -- -tags=integration -v -race -coverprofile=coverage-int.out \
 			./parser/internal/infrastructure/repositories/...
 
-crawler-go-qa: crawler-go-fmt crawler-go-lint crawler-go-test-unit
+crawler-go-qa: crawler-go-fmt crawler-go-lint crawler-go-test-unit crawler-go-test-integration
 
 # ----------
 # Surfer

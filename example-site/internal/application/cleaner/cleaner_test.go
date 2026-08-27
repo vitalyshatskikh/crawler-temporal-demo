@@ -15,7 +15,7 @@ import (
 	domaintest "github.com/vitalyshatskikh/crawler-temporal-demo/example-site/internal/domain/testutil"
 )
 
-func newCleanerWithMockRepo(t *testing.T, cfg *Config) (*AdvertsCleaner, *domaintest.MockAdvertsRepository) {
+func newCleanerWithMockRepo(t *testing.T, cfg *CleanConfig) (*AdvertsCleaner, *domaintest.MockAdvertsRepository) {
 	t.Helper()
 	repo := domaintest.NewMockAdvertsRepository(t)
 	svc, err := domain.NewAdvertsCRUDService(repo)
@@ -24,7 +24,7 @@ func newCleanerWithMockRepo(t *testing.T, cfg *Config) (*AdvertsCleaner, *domain
 }
 
 func TestAdvertsCleaner_New_WhenValidArgs_ThenReturnsCleaner(t *testing.T) {
-	cfg := &Config{
+	cfg := &CleanConfig{
 		CleanupInterval: time.Minute,
 		CleanupDuration: time.Hour,
 	}
@@ -38,7 +38,7 @@ func TestAdvertsCleaner_New_WhenValidArgs_ThenReturnsCleaner(t *testing.T) {
 }
 
 func TestAdvertsCleaner_Run_WhenTickerFires_ThenCallsCleanupWithDuration(t *testing.T) {
-	cfg := &Config{
+	cfg := &CleanConfig{
 		CleanupInterval: 10 * time.Millisecond,
 		CleanupDuration: time.Hour,
 	}
@@ -67,7 +67,7 @@ func TestAdvertsCleaner_Run_WhenTickerFires_ThenCallsCleanupWithDuration(t *test
 }
 
 func TestAdvertsCleaner_Run_WhenCleanupErrors_ThenContinuesRunning(t *testing.T) {
-	cfg := &Config{
+	cfg := &CleanConfig{
 		CleanupInterval: 20 * time.Millisecond,
 		CleanupDuration: 2 * time.Hour,
 	}
@@ -96,7 +96,7 @@ func TestAdvertsCleaner_Run_WhenCleanupErrors_ThenContinuesRunning(t *testing.T)
 }
 
 func TestAdvertsCleaner_Run_WhenContextCancelled_ThenReturns(t *testing.T) {
-	cfg := &Config{
+	cfg := &CleanConfig{
 		CleanupInterval: time.Hour,
 		CleanupDuration: time.Hour,
 	}

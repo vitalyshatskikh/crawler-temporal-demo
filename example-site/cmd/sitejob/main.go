@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/vitalyshatskikh/go-lib/database/postgres"
 
 	"github.com/vitalyshatskikh/go-lib/config"
@@ -25,32 +24,22 @@ import (
 )
 
 type siteJobCfg struct {
-	Base    *config.Config
-	Cleaner *cleaner.Config
+	config.Config
+	cleaner.CleanConfig
 }
 
 func main() {
-	baseCfg, err := config.Load()
+	cfg, err := config.LoadInto(&siteJobCfg{})
 	if err != nil {
-		log.Fatalf("failed to load base config: %v", err)
+		log.Fatalf("failed to load config: %v", err)
 	}
 
-	logger, err := observability.InitLogger(baseCfg)
+	logger, err := observability.InitLogger(&cfg.Config)
 	if err != nil {
 		log.Fatalf("failed to initialize logger: %v", err)
 	}
 
-	cleanCfg := &cleaner.Config{}
-	if err := cleanenv.ReadEnv(cleanCfg); err != nil {
-		log.Fatalf("failed to read job config: %v", err)
-	}
-
-	jobCfg := &siteJobCfg{
-		Base:    baseCfg,
-		Cleaner: cleanCfg,
-	}
-
-	err = run(jobCfg, logger)
+	err = run(cfg, logger)
 	if err != nil {
 		logger.Error("service exited with errors", zap.Error(err))
 		_ = logger.Sync()
@@ -71,7 +60,7 @@ func run(cfg *siteJobCfg, logger *zap.Logger) error {
 		logger.Info("sitejob stopped")
 	}()
 
-	dbPool, err := postgres.NewPGXPool(cfg.Base.Postgres, logger)
+	dbPool, err := postgres.NewPGXPool(cfg.Postgres, logger)
 	if err != nil {
 		return fmt.Errorf("failed to connect to postgres: %w", err)
 	}
@@ -88,7 +77,7 @@ func run(cfg *siteJobCfg, logger *zap.Logger) error {
 	defer cancel()
 
 	wg.Go(func() {
-		cleaner.New(cfg.Cleaner, logger, advertsService).Run(ctx)
+		cleaner.New(&cfg.CleanConfig, logger, advertsService).Run(ctx)
 	})
 
 	wg.Wait()

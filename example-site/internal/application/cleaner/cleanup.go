@@ -10,12 +10,12 @@ import (
 )
 
 type AdvertsCleaner struct {
-	cfg           *Config
+	cfg           *CleanConfig
 	logger        *zap.Logger
 	advertService *domain.AdvertsCRUDService
 }
 
-func New(cfg *Config, logger *zap.Logger, service *domain.AdvertsCRUDService) *AdvertsCleaner {
+func New(cfg *CleanConfig, logger *zap.Logger, service *domain.AdvertsCRUDService) *AdvertsCleaner {
 	return &AdvertsCleaner{
 		cfg:           cfg,
 		logger:        logger,

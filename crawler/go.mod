@@ -11,7 +11,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/stretchr/testify v1.11.1
-	github.com/vitalyshatskikh/go-lib v1.3.2
+	github.com/vitalyshatskikh/go-lib v1.3.3
 	go.temporal.io/sdk v1.48.0
 	go.uber.org/zap v1.28.0
 	go.uber.org/zap/exp v0.3.0

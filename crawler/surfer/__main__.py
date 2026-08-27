@@ -43,7 +43,6 @@ async def main() -> None:
             surf_config_repo=surf_config_repo,
         ),
         workers.AdvertsWorker(client=client),
-        workers.ParsingWorker(client=client),
     ]
 
     async with asyncio.TaskGroup() as tg:
