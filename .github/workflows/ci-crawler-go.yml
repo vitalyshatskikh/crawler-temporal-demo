@@ -1,0 +1,68 @@
+name: CI Crawler Go
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crawler/parser/**'
+      - 'crawler/go.mod'
+      - 'go.work'
+      - 'go.work.sum'
+      - '.github/workflows/ci-crawler-go.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crawler/parser/**'
+      - 'crawler/go.mod'
+      - 'go.work'
+      - 'go.work.sum'
+      - '.github/workflows/ci-crawler-go.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  crawler-go-ci:
+    name: crawler-go
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Build
+        working-directory: crawler
+        run: go build ./...
+
+      - name: Lint
+        working-directory: crawler
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 && golangci-lint run ./...
+
+      - name: Test Unit
+        working-directory: crawler
+        run: go install gotest.tools/gotestsum@v1.13.0 && gotestsum -- -v -race -coverprofile=coverage.out ./...
+
+      - name: Test Integration
+        run: echo 'no integration tests for crawler-go yet' && true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: crawler/coverage.out
+          flags: crawler-go
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
