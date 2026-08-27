@@ -1,8 +1,18 @@
-# Crawler
-
+Crawler, Python code:
 [![CI Crawler Python](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-crawler-py.yml/badge.svg)](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-crawler-py.yml)
+[![codecov](https://codecov.io/gh/vitalyshatskikh/crawler-temporal-demo/graph/badge.svg?token=3HS6Z0KAR5&flag=crawler-py)](https://codecov.io/gh/vitalyshatskikh/crawler-temporal-demo)
+
+Crawler, Go code:
 [![CI Crawler Go](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-crawler-go.yml/badge.svg)](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-crawler-go.yml)
+[![codecov](https://codecov.io/gh/vitalyshatskikh/crawler-temporal-demo/graph/badge.svg?token=3HS6Z0KAR5&flag=crawler-go)](https://codecov.io/gh/vitalyshatskikh/crawler-temporal-demo)
+
+Example site:
 [![CI Example Site](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-example-site.yml/badge.svg)](https://github.com/vitalyshatskikh/crawler-temporal-demo/actions/workflows/ci-example-site.yml)
+[![codecov](https://codecov.io/gh/vitalyshatskikh/crawler-temporal-demo/graph/badge.svg?token=3HS6Z0KAR5&flag=example-site)](https://codecov.io/gh/vitalyshatskikh/crawler-temporal-demo)
+
+---
+
+# Crawler
 
 Sample web crawing/scraping app
 
