@@ -79,7 +79,7 @@ jobs:
           gotestsum -- -tags=integration -v -race -coverprofile=coverage-int.out ./internal/infrastructure/repositories/...
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: example-site/coverage.out,example-site/coverage-int.out
           flags: example-site
