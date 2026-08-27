@@ -15,8 +15,6 @@ import (
 
 var _ domain.ConfigRepository = (*PGConfigRepo)(nil)
 
-var ErrUnmarshalConfig = errors.New("unmarshal parsing_configs.config")
-
 type PGConfigRepo struct {
 	q *queries.Queries
 }
@@ -39,7 +37,7 @@ func (r *PGConfigRepo) GetConfig(ctx context.Context, sourceID domain.SourceID, 
 
 	var params []domain.ParsingParam
 	if err := json.Unmarshal(row.Config, &params); err != nil {
-		return domain.ParsingConfig{}, fmt.Errorf("%w: %w", ErrUnmarshalConfig, err)
+		return domain.ParsingConfig{}, fmt.Errorf("%w: %w", domain.ErrParsingFailed, err)
 	}
 
 	return domain.ParsingConfig{

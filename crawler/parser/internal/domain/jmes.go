@@ -39,7 +39,7 @@ func NewJMESParser(cnf ParsingConfig) (*JMESParser, error) {
 func (p *JMESParser) Parse(ctx context.Context, body []byte) (map[string][]any, error) {
 	var data any
 	if err := json.Unmarshal(body, &data); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrUnmarshalBody, err)
+		return nil, fmt.Errorf("%w: %w", ErrParsingFailed, err)
 	}
 
 	result := make(map[string][]any, len(p.cnf.Params))

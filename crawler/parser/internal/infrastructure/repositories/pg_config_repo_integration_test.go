@@ -96,7 +96,7 @@ func TestPGConfigRepo_GetConfig_WhenMalformedConfigJSON(t *testing.T) {
 	repo := NewPGConfigRepo(testutil.TestPool)
 	_, err := repo.GetConfig(context.Background(), "siteapi", "search_page")
 
-	assert.ErrorIs(t, err, ErrUnmarshalConfig)
+	assert.ErrorIs(t, err, domain.ErrParsingFailed)
 	assert.Error(t, err)
 }
 

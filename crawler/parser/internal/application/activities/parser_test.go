@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.temporal.io/sdk/temporal"
 
 	"github.com/vitalyshatskikh/crawler-temporal-demo/crawler/parser/internal/application/activities"
 	apptestutil "github.com/vitalyshatskikh/crawler-temporal-demo/crawler/parser/internal/application/testutil"
@@ -66,6 +67,9 @@ func TestParser_ParseSearchPage_WhenInvalidMetaType_ThenErrValidation(t *testing
 
 	assert.Nil(t, metas)
 	assert.ErrorIs(t, err, domain.ErrValidation)
+	var appErr *temporal.ApplicationError
+	assert.ErrorAs(t, err, &appErr)
+	assert.True(t, appErr.NonRetryable())
 }
 
 func TestParser_ParseSearchPage_WhenRepoGetFails_ThenWrappedError(t *testing.T) {
@@ -149,6 +153,9 @@ func TestParser_ParseSearchPage_WhenServiceFails_ThenWrappedError(t *testing.T) 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "parse search page")
 	assert.ErrorIs(t, err, domain.ErrValidation)
+	var appErr *temporal.ApplicationError
+	assert.ErrorAs(t, err, &appErr)
+	assert.True(t, appErr.NonRetryable())
 }
 
 func TestParser_ParseSearchPage_WhenValid_ThenSavesAllAndReturnsMetas(t *testing.T) {
@@ -346,6 +353,9 @@ func TestParser_ParseAdvertContent_WhenInvalidMetaType_ThenErrValidation(t *test
 	err := parser.ParseAdvertContent(context.Background(), meta)
 
 	assert.ErrorIs(t, err, domain.ErrValidation)
+	var appErr *temporal.ApplicationError
+	assert.ErrorAs(t, err, &appErr)
+	assert.True(t, appErr.NonRetryable())
 }
 
 func TestParser_ParseAdvertContent_WhenRepoGetFails_ThenWrappedError(t *testing.T) {
@@ -427,6 +437,9 @@ func TestParser_ParseAdvertContent_WhenServiceFails_ThenWrappedError(t *testing.
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "parse advert")
 	assert.ErrorIs(t, err, domain.ErrValidation)
+	var appErr *temporal.ApplicationError
+	assert.ErrorAs(t, err, &appErr)
+	assert.True(t, appErr.NonRetryable())
 }
 
 func TestParser_ParseAdvertContent_WhenSaveFails_ThenWrappedError(t *testing.T) {
@@ -544,4 +557,190 @@ func TestParser_ParseAdvertContent_WhenValid_ThenSavesAndReturnsNil(t *testing.T
 
 	assert.NoError(t, err)
 	mockRepo.AssertNumberOfCalls(t, "SaveDocument", 1)
+}
+
+func TestParser_ParseSearchPage_WhenRepoGetFails_ThenRetryable(t *testing.T) {
+	mockConfRepo := testutil.NewMockConfigRepository(t)
+	mockRepo := apptestutil.NewMockAdvertsRepository(t)
+	svc, _ := domain.NewParsingService(mockConfRepo)
+	parser, _ := activities.NewParser(svc, mockRepo)
+
+	mockRepo.EXPECT().GetDocument(
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(domain.Document{}, errors.New("repo get failed"))
+
+	meta := domain.DocumentMeta{
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://search.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
+	}
+
+	_, err := parser.ParseSearchPage(context.Background(), meta)
+
+	assert.Error(t, err)
+	var appErr *temporal.ApplicationError
+	if errors.As(err, &appErr) {
+		assert.False(t, appErr.NonRetryable())
+	}
+}
+
+func TestParser_ParseAdvertContent_WhenRepoGetFails_ThenRetryable(t *testing.T) {
+	mockConfRepo := testutil.NewMockConfigRepository(t)
+	mockRepo := apptestutil.NewMockAdvertsRepository(t)
+	svc, _ := domain.NewParsingService(mockConfRepo)
+	parser, _ := activities.NewParser(svc, mockRepo)
+
+	mockRepo.EXPECT().GetDocument(
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(domain.Document{}, errors.New("repo get failed"))
+
+	meta := domain.DocumentMeta{
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeDownloadedAdvert,
+		ExternalURL:       "https://example.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
+	}
+
+	err := parser.ParseAdvertContent(context.Background(), meta)
+
+	assert.Error(t, err)
+	var appErr *temporal.ApplicationError
+	if errors.As(err, &appErr) {
+		assert.False(t, appErr.NonRetryable())
+	}
+}
+
+func TestParser_ParseSearchPage_WhenSaveFails_ThenRetryable(t *testing.T) {
+	mockConfRepo := testutil.NewMockConfigRepository(t)
+	mockRepo := apptestutil.NewMockAdvertsRepository(t)
+	svc, _ := domain.NewParsingService(mockConfRepo)
+	parser, _ := activities.NewParser(svc, mockRepo)
+
+	mockConfRepo.EXPECT().GetConfig(
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(domain.ParsingConfig{
+		SourceID:     "src1",
+		DocumentType: domain.DocumentTypeSearchPage,
+		Params: []domain.ParsingParam{
+			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
+		},
+	}, nil)
+
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:            "parent123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeSearchPage,
+			ExternalURL:       "https://search.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
+		},
+		Body: []byte(`{"urls": ["https://a.com"]}`),
+	}
+	mockRepo.EXPECT().GetDocument(
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(doc, nil)
+
+	mockRepo.EXPECT().SaveDocument(
+		mock.Anything,
+		mock.Anything,
+	).Return(errors.New("save failed")).Once()
+
+	meta := domain.DocumentMeta{
+		SdocID:            "parent123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSearchPage,
+		ExternalURL:       "https://search.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
+	}
+
+	_, err := parser.ParseSearchPage(context.Background(), meta)
+
+	assert.Error(t, err)
+	var appErr *temporal.ApplicationError
+	if errors.As(err, &appErr) {
+		assert.False(t, appErr.NonRetryable())
+	}
+}
+
+func TestParser_ParseAdvertContent_WhenSaveFails_ThenRetryable(t *testing.T) {
+	mockConfRepo := testutil.NewMockConfigRepository(t)
+	mockRepo := apptestutil.NewMockAdvertsRepository(t)
+	svc, _ := domain.NewParsingService(mockConfRepo)
+	parser, _ := activities.NewParser(svc, mockRepo)
+
+	mockConfRepo.EXPECT().GetConfig(
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(domain.ParsingConfig{
+		SourceID:     "src1",
+		DocumentType: domain.DocumentTypeDownloadedAdvert,
+		Params: []domain.ParsingParam{
+			{Name: "url", JMESPath: "url", Default: ""},
+		},
+	}, nil)
+
+	doc := domain.Document{
+		DocumentMeta: domain.DocumentMeta{
+			SdocID:            "sdoc123",
+			SourceID:          "src1",
+			Type:              domain.DocumentTypeDownloadedAdvert,
+			ExternalURL:       "https://example.com",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+			UpdateIntervalSec: 86400,
+		},
+		Body: []byte(`{"url": "https://example.com/product/123"}`),
+	}
+	mockRepo.EXPECT().GetDocument(
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(doc, nil)
+
+	mockRepo.EXPECT().SaveDocument(
+		mock.Anything,
+		mock.Anything,
+	).Return(errors.New("save failed"))
+
+	meta := domain.DocumentMeta{
+		SdocID:            "sdoc123",
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeDownloadedAdvert,
+		ExternalURL:       "https://example.com",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UpdateIntervalSec: 86400,
+	}
+
+	err := parser.ParseAdvertContent(context.Background(), meta)
+
+	assert.Error(t, err)
+	var appErr *temporal.ApplicationError
+	if errors.As(err, &appErr) {
+		assert.False(t, appErr.NonRetryable())
+	}
 }
