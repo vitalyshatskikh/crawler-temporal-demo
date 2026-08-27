@@ -1,6 +1,6 @@
 ## 1. Prerequisite
 
-- [ ] 1.1 Add `CODECOV_TOKEN` as a repository secret in GitHub UI (Settings → Secrets and variables → Actions). The codecov-action upload step will fail silently without it; coverage reports will still be generated and the workflow will pass.
+- [x] 1.1 Add `CODECOV_TOKEN` as a repository secret in GitHub UI (Settings → Secrets and variables → Actions). The codecov-action upload step will fail silently without it; coverage reports will still be generated and the workflow will pass.
 
 ## 2. Codecov Configuration
 
