@@ -48,7 +48,7 @@ func (s *ParsingService) ParseSearchPage(ctx context.Context, doc Document) ([]D
 
 	parser, err := s.getJMESParser(ctx, doc.SourceID, doc.Type)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get search page parser %s/%s: %w", doc.SourceID, doc.SdocID, err)
+		return nil, fmt.Errorf("failed to get search page parser %s/%s: %w", doc.SourceID, doc.Type, err)
 	}
 
 	parsed, err := parser.Parse(ctx, doc.Body)

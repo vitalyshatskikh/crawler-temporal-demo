@@ -45,7 +45,7 @@ class ProcessSearchPage:
             external_url=in_.page_url,
             update_interval_sec=in_.surf_params.update_interval_sec,
         )
-        page_meta = await workflow.execute_child_workflow(
+        await workflow.execute_child_workflow(
             consts.WorkflowName.DOWNLOAD_SEARCH_PAGE,
             DownloadIn(
                 meta=page_doc_meta,
@@ -59,7 +59,7 @@ class ProcessSearchPage:
 
         documents_meta: list[adverts.DocumentMeta] = await workflow.execute_activity(
             consts.ActivityName.PARSE_SEARCH_PAGE,
-            page_meta,
+            page_doc_meta,
             task_queue=consts.QueueName.PARSING,
             start_to_close_timeout=in_.surfer_config.parse_search_page_timeout,
             retry_policy=in_.surfer_config.parse_search_page_retry.to_retry_policy(),
