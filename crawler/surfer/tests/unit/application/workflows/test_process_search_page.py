@@ -47,13 +47,20 @@ async def test_run__when_parse_returns_empty__then_no_advert_children(
         ),
     ])
 
-    await env.client.execute_workflow(  # type: ignore[misc]
+    report = await env.client.execute_workflow(  # type: ignore[misc]
         ProcessSearchPage.run,
         in_,
         id='test-psp-empty',
         task_queue=consts.QueueName.SURFING_TASK,
     )
 
+    assert report == {
+        "surf_config_name": in_.surf_params.name,  # type: ignore[attr-defined]
+        "page_url": in_.page_url,
+        "processed": 0,
+        "skipped": 0,
+        "total": 0,
+    }
     assert len(get_mock_calls(consts.WorkflowName.PROCESS_ADVERT)) == 0
 
     download_call = get_mock_calls(consts.WorkflowName.DOWNLOAD_SEARCH_PAGE)[0]
@@ -90,13 +97,20 @@ async def test_run__when_parse_returns_sdocs__then_starts_advert_children(
         ),
     ])
 
-    await env.client.execute_workflow(  # type: ignore[misc]
+    report = await env.client.execute_workflow(  # type: ignore[misc]
         ProcessSearchPage.run,
         in_,
         id='test-psp-two-sdocs',
         task_queue=consts.QueueName.SURFING_TASK,
     )
 
+    assert report == {
+        "surf_config_name": in_.surf_params.name,  # type: ignore[attr-defined]
+        "page_url": in_.page_url,
+        "processed": 2,
+        "skipped": 0,
+        "total": 2,
+    }
     advert_calls = get_mock_calls(consts.WorkflowName.PROCESS_ADVERT)
     assert len(advert_calls) == 2
     assert str(advert_calls[0].args[0].doc_meta.sdoc_id) == '1'
@@ -178,9 +192,9 @@ async def test_run__when_parse_fails__then_propagates_error(
     assert_workflow_failure_message(excinfo, 'parse boom')
 
 
-async def test_run__when_doc_meta_recently_updated__then_skips_advert_children(
-    env: temporalio.testing.WorkflowEnvironment,
-    make_workers: tp.Callable[[list[WorkerSpec]], tp.Awaitable[list[temporalio.worker.Worker]]],
+async def test_run__when_doc_meta_just_created__then_starts_advert_children(
+        env: temporalio.testing.WorkflowEnvironment,
+        make_workers: tp.Callable[[list[WorkerSpec]], tp.Awaitable[list[temporalio.worker.Worker]]],
 ) -> None:
     clear_mocks()
     recent_ts = dt.datetime.now(tz=dt.UTC)
@@ -200,11 +214,57 @@ async def test_run__when_doc_meta_recently_updated__then_skips_advert_children(
         ),
     ])
 
-    await env.client.execute_workflow(  # type: ignore[misc]
+    report = await env.client.execute_workflow(  # type: ignore[misc]
         ProcessSearchPage.run,
         in_,
         id='test-psp-recent-skip',
         task_queue=consts.QueueName.SURFING_TASK,
     )
 
+    assert report == {
+        "surf_config_name": in_.surf_params.name,  # type: ignore[attr-defined]
+        "page_url": in_.page_url,
+        "processed": 2,
+        "skipped": 0,
+        "total": 2,
+    }
+    assert len(get_mock_calls(consts.WorkflowName.PROCESS_ADVERT)) == 2
+
+
+async def test_run__when_doc_meta_recently_updated__then_skips_advert_children(
+    env: temporalio.testing.WorkflowEnvironment,
+    make_workers: tp.Callable[[list[WorkerSpec]], tp.Awaitable[list[temporalio.worker.Worker]]],
+) -> None:
+    clear_mocks()
+    recent_ts = dt.datetime.now(tz=dt.UTC)
+    recent_1 = DocMetaFactory(sdoc_id='1', created_at=recent_ts, updated_at=recent_ts+dt.timedelta(seconds=1))
+    recent_2 = DocMetaFactory(sdoc_id='2', created_at=recent_ts, updated_at=recent_ts+dt.timedelta(seconds=1))
+    set_mock(consts.WorkflowName.DOWNLOAD_SEARCH_PAGE, result={})
+    set_mock(consts.ActivityName.PARSE_SEARCH_PAGE, result=[recent_1, recent_2])
+    set_mock(consts.WorkflowName.PROCESS_ADVERT, result=None)
+    in_ = ProcessSearchPageInFactory()
+
+    await make_workers([
+        WorkerSpec(
+            workflows=[ProcessSearchPage],
+            activities=[],
+            task_queue=consts.QueueName.SURFING_TASK,
+            interceptors=[WorkflowMockInterceptor()],
+        ),
+    ])
+
+    report = await env.client.execute_workflow(  # type: ignore[misc]
+        ProcessSearchPage.run,
+        in_,
+        id='test-psp-recent-skip',
+        task_queue=consts.QueueName.SURFING_TASK,
+    )
+
+    assert report == {
+        "surf_config_name": in_.surf_params.name,  # type: ignore[attr-defined]
+        "page_url": in_.page_url,
+        "processed": 0,
+        "skipped": 2,
+        "total": 2,
+    }
     assert len(get_mock_calls(consts.WorkflowName.PROCESS_ADVERT)) == 0

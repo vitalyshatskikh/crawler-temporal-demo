@@ -1,3 +1,4 @@
+import datetime as dt
 import http
 import logging
 
@@ -37,8 +38,12 @@ class WebDownloader:
                 doc_meta.sdoc_id,
             )
 
+        now = dt.datetime.now(tz=dt.UTC)
         doc = adverts.Document(
-            **doc_meta.model_dump(),
+            **doc_meta.model_dump(exclude={'created_at', 'updated_at', 'type'}),
+            created_at=now,
+            updated_at=now,
+            type=_downloaded_type(doc_meta.type),
             body=body,
         )
         await self._doc_repo.save(doc)
@@ -52,3 +57,17 @@ async def _raise_for_status(response: aiohttp.ClientResponse) -> None:
         raise errors.DownloaderError("server error", response.status, response.reason, str(response.url))
     if response.status >= http.HTTPStatus.BAD_REQUEST and response.status != http.HTTPStatus.NOT_FOUND:
         raise errors.ValidationError("client error", response.status, response.reason, str(response.url))
+
+
+def _downloaded_type(in_type: adverts.DocumentType) -> adverts.DocumentType:
+    out_type = in_type
+    match in_type:
+        case adverts.DocumentType.SEARCH_PAGE:
+            out_type = adverts.DocumentType.SEARCH_PAGE
+        case adverts.DocumentType.SURFED_ADVERT:
+            out_type = adverts.DocumentType.DOWNLOADED_ADVERT
+        case adverts.DocumentType.DOWNLOADED_ADVERT:
+            out_type = adverts.DocumentType.DOWNLOADED_ADVERT
+        case adverts.DocumentType.PARSED_ADVERT:
+            out_type = adverts.DocumentType.DOWNLOADED_ADVERT
+    return out_type

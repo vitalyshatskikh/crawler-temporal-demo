@@ -1,5 +1,6 @@
 import datetime as dt
 import hashlib
+import typing as tp
 
 import pydantic
 from temporalio import workflow
@@ -25,7 +26,7 @@ class ProcessSearchPageIn(pydantic.BaseModel):
 @workflow.defn(name=consts.WorkflowName.PROCESS_SEARCH_PAGE)
 class ProcessSearchPage:
     @workflow.run
-    async def run(self, in_: ProcessSearchPageIn) -> None:
+    async def run(self, in_: ProcessSearchPageIn) -> dict[str, tp.Any]:
         workflow.logger.info(
             "starting %s", consts.WorkflowName.PROCESS_SEARCH_PAGE,
             extra={"surf_config_name": in_.surf_params.name, "page_url": in_.page_url},
@@ -61,6 +62,7 @@ class ProcessSearchPage:
             consts.ActivityName.PARSE_SEARCH_PAGE,
             page_doc_meta,
             task_queue=consts.QueueName.PARSING,
+            result_type=list[adverts.DocumentMeta],
             start_to_close_timeout=in_.surfer_config.parse_search_page_timeout,
             retry_policy=in_.surfer_config.parse_search_page_retry.to_retry_policy(),
         )
@@ -68,7 +70,9 @@ class ProcessSearchPage:
         processed = 0
         skipped = 0
         for doc_meta in documents_meta:
-            if doc_meta.updated_at + dt.timedelta(seconds=doc_meta.update_interval_sec) > workflow.now():
+            just_created = doc_meta.updated_at == doc_meta.created_at
+            need_update = doc_meta.updated_at + dt.timedelta(seconds=doc_meta.update_interval_sec) > workflow.now()
+            if not just_created and need_update:
                 skipped += 1
                 continue
             wf_id = f"{consts.WorkflowName.PROCESS_ADVERT}/{in_.surf_params.name}/sdocid/{doc_meta.sdoc_id}"
@@ -86,14 +90,16 @@ class ProcessSearchPage:
             )
             processed += 1
 
+        stat = {
+            "surf_config_name": in_.surf_params.name,
+            "page_url": in_.page_url,
+            "processed": processed,
+            "skipped": skipped,
+            "total": len(documents_meta),
+        }
         workflow.logger.info(
             "documents processed",
-            extra={
-                "surf_config_name": in_.surf_params.name,
-                "page_url": in_.page_url,
-                "processed": processed,
-                "skipped": skipped,
-                "total": len(documents_meta),
-            },
+            extra=stat,
         )
+        return stat
 
