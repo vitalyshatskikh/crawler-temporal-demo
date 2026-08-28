@@ -42,7 +42,7 @@ class ProcessAdvert:
 
         await workflow.execute_activity(
             consts.ActivityName.PARSE_ADVERT_CONTENT,
-            in_.doc_meta,
+            in_.doc_meta.model_copy(update={'type': adverts.DocumentType.DOWNLOADED_ADVERT}),
             task_queue=consts.QueueName.PARSING,
             start_to_close_timeout=in_.surfer_config.parse_advert_content_timeout,
             retry_policy=in_.surfer_config.parse_advert_content_retry.to_retry_policy(),

@@ -1,9 +1,10 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
 
-const (
-	PropExternalURL = "external_url"
+	"github.com/cbroglie/mustache"
 )
 
 type ParsingParam struct {
@@ -13,11 +14,14 @@ type ParsingParam struct {
 }
 
 type ParsingConfig struct {
-	ID           int
-	Name         string
-	SourceID     SourceID
-	DocumentType DocumentType
-	Params       []ParsingParam
+	ID                  int
+	Name                string
+	SourceID            SourceID
+	DocumentType        DocumentType
+	ExternalURLJMESPath string
+	ExternalURLTemplate string
+	ContentURLTemplate  string
+	Params              []ParsingParam
 }
 
 func (c ParsingConfig) Validate() error {
@@ -27,19 +31,26 @@ func (c ParsingConfig) Validate() error {
 	if c.DocumentType == "" {
 		return fmt.Errorf("%w: DocumentType is required", ErrValidation)
 	}
-	if len(c.Params) < 1 {
-		return fmt.Errorf("%w: at least one ParsingParam required", ErrValidation)
-	}
 	if c.DocumentType == DocumentTypeSearchPage {
-		hasExternalURL := false
-		for _, p := range c.Params {
-			if p.Name == PropExternalURL {
-				hasExternalURL = true
-				break
-			}
+		if c.ExternalURLJMESPath == "" {
+			return fmt.Errorf("%w: ExternalURLJMESPath is required for search_page", ErrValidation)
 		}
-		if !hasExternalURL {
-			return fmt.Errorf("%w: Params must have '%s' expression", ErrValidation, PropExternalURL)
+	}
+	if c.ExternalURLTemplate != "" {
+		_, err := mustache.ParseString(c.ExternalURLTemplate)
+		if err != nil {
+			return fmt.Errorf("%w: ExternalURLTemplate: %w", ErrValidation, err)
+		}
+	}
+	if c.ContentURLTemplate != "" {
+		_, err := mustache.ParseString(c.ContentURLTemplate)
+		if err != nil {
+			return fmt.Errorf("%w: ContentURLTemplate: %w", ErrValidation, err)
+		}
+	}
+	for _, p := range c.Params {
+		if strings.HasPrefix(p.Name, "_") {
+			return fmt.Errorf("%w: Param.Name '%s' starts with reserved prefix '_'", ErrValidation, p.Name)
 		}
 	}
 	return nil

@@ -73,7 +73,7 @@ func TestJMESParser_WhenValidJSONWithSliceResult_ThenCorrectMap(t *testing.T) {
 	assert.Equal(t, []any{"a", "b"}, result["urls"])
 }
 
-func TestJMESParser_WhenNonJSONBody_ThenErrUnmarshalBody(t *testing.T) {
+func TestJMESParser_WhenNonJSONBody_ThenErrParsingFailed(t *testing.T) {
 	cfg := domain.ParsingConfig{
 		SourceID:     "src1",
 		DocumentType: domain.DocumentTypeSearchPage,
@@ -85,7 +85,7 @@ func TestJMESParser_WhenNonJSONBody_ThenErrUnmarshalBody(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = parser.Parse(context.Background(), []byte("not json <html>"))
-	assert.ErrorIs(t, err, domain.ErrUnmarshalBody)
+	assert.ErrorIs(t, err, domain.ErrParsingFailed)
 }
 
 func TestJMESParser_WhenMissingPath_ThenUsesDefault(t *testing.T) {
@@ -154,7 +154,7 @@ func TestJMESParser_WhenContextCancelled_ThenCtxErr(t *testing.T) {
 	assert.ErrorIs(t, err, context.Canceled)
 }
 
-func TestJMESParser_WhenEmptyBody_ThenErrUnmarshalBody(t *testing.T) {
+func TestJMESParser_WhenEmptyBody_ThenErrParsingFailed(t *testing.T) {
 	cfg := domain.ParsingConfig{
 		SourceID:     "src1",
 		DocumentType: domain.DocumentTypeSearchPage,
@@ -167,7 +167,7 @@ func TestJMESParser_WhenEmptyBody_ThenErrUnmarshalBody(t *testing.T) {
 
 	_, err = parser.Parse(context.Background(), []byte(""))
 
-	assert.ErrorIs(t, err, domain.ErrUnmarshalBody)
+	assert.ErrorIs(t, err, domain.ErrParsingFailed)
 }
 
 func TestJMESParser_WhenBooleanResult_ThenWrappedInSlice(t *testing.T) {

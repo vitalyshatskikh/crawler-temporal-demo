@@ -266,18 +266,19 @@ func TestDocumentMeta_WhenMarshaledToJSON_ThenKeysAreSnakeCase(t *testing.T) {
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSurfedAdvert,
 		ExternalURL:       "https://example.com",
+		ContentURL:        "",
 		UpdateIntervalSec: 86400,
 	}
 
 	data, err := json.Marshal(meta)
 	assert.NoError(t, err)
 
-	expected := `{"sdoc_id":"abc123","created_at":"` + now.Format(time.RFC3339) + `","updated_at":"` + now.Format(time.RFC3339) + `","source_id":"src1","type":"surfed_advert","external_url":"https://example.com","update_interval_sec":86400}`
+	expected := `{"sdoc_id":"abc123","created_at":"` + now.Format(time.RFC3339) + `","updated_at":"` + now.Format(time.RFC3339) + `","source_id":"src1","type":"surfed_advert","external_url":"https://example.com","content_url":"","update_interval_sec":86400}`
 	assert.JSONEq(t, expected, string(data))
 }
 
 func TestDocumentMeta_WhenUnmarshaledFromSnakeCaseJSON_ThenFieldsPopulated(t *testing.T) {
-	jsonData := `{"sdoc_id":"abc123","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-02T00:00:00Z","source_id":"src1","type":"surfed_advert","external_url":"https://example.com","update_interval_sec":86400}`
+	jsonData := `{"sdoc_id":"abc123","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-02T00:00:00Z","source_id":"src1","type":"surfed_advert","external_url":"https://example.com","content_url":"","update_interval_sec":86400}`
 
 	var meta domain.DocumentMeta
 	err := json.Unmarshal([]byte(jsonData), &meta)
@@ -287,5 +288,31 @@ func TestDocumentMeta_WhenUnmarshaledFromSnakeCaseJSON_ThenFieldsPopulated(t *te
 	assert.Equal(t, domain.SourceID("src1"), meta.SourceID)
 	assert.Equal(t, domain.DocumentType("surfed_advert"), meta.Type)
 	assert.Equal(t, "https://example.com", meta.ExternalURL)
+	assert.Empty(t, meta.ContentURL)
 	assert.Equal(t, 86400, meta.UpdateIntervalSec)
+}
+
+func TestDocumentMeta_WhenContentURLSet_ThenMarshaledAndUnmarshaled(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	original := domain.DocumentMeta{
+		SdocID:            "cdn123",
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		SourceID:          "src1",
+		Type:              domain.DocumentTypeSurfedAdvert,
+		ExternalURL:       "https://origin.example.com/page",
+		ContentURL:        "https://cdn.example.com/page",
+		UpdateIntervalSec: 86400,
+	}
+
+	data, err := json.Marshal(original)
+	assert.NoError(t, err)
+
+	var restored domain.DocumentMeta
+	err = json.Unmarshal(data, &restored)
+	assert.NoError(t, err)
+
+	assert.Equal(t, original.SdocID, restored.SdocID)
+	assert.Equal(t, original.ContentURL, restored.ContentURL)
+	assert.Equal(t, original.ExternalURL, restored.ExternalURL)
 }

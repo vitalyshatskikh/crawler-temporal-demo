@@ -33,6 +33,7 @@ async def insert_document(
     source_id: str | None = None,
     doc_type: str = "downloaded_advert",
     external_url: str | None = None,
+    content_url: str | None = None,
     body: str = "<html></html>",
     created_at: dt.datetime | None = None,
     updated_at: dt.datetime | None = None,
@@ -47,6 +48,8 @@ async def insert_document(
         created_at = dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
     if updated_at is None:
         updated_at = created_at
+    if content_url is None:
+        content_url = ""
 
     await session.execute(
         sa.insert(shared_orm.DocumentORM).values(
@@ -54,6 +57,7 @@ async def insert_document(
             source_id=source_id,
             doc_type=doc_type,
             external_url=external_url,
+            content_url=content_url,
             body=body,
             created_at=created_at,
             updated_at=updated_at,

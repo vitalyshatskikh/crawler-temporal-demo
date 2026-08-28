@@ -11,15 +11,15 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+const (
+	ExternalURLKey = "_external_url"
+)
+
 type parserKey struct {
 	sourceID SourceID
 	docType  DocumentType
 }
 
-// ParsingService compiles JMESPath parsers from ParsingConfig and applies them
-// to Documents. Parsers are cached per (SourceID, DocumentType) pair and are
-// never invalidated for the lifetime of the service; configs are treated as
-// static. Use a new service instance if config refresh is needed.
 type ParsingService struct {
 	confRepo ConfigRepository
 
@@ -48,7 +48,7 @@ func (s *ParsingService) ParseSearchPage(ctx context.Context, doc Document) ([]D
 
 	parser, err := s.getJMESParser(ctx, doc.SourceID, doc.Type)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get search page parser %s/%s: %w", doc.SourceID, doc.SdocID, err)
+		return nil, fmt.Errorf("failed to get search page parser %s/%s: %w", doc.SourceID, doc.Type, err)
 	}
 
 	parsed, err := parser.Parse(ctx, doc.Body)
@@ -56,15 +56,11 @@ func (s *ParsingService) ParseSearchPage(ctx context.Context, doc Document) ([]D
 		return nil, fmt.Errorf("failed to parse search page %s/%s: %w", doc.SourceID, doc.SdocID, err)
 	}
 
-	urls := parsed[PropExternalURL]
+	urls := parsed[ExternalURLKey]
 	parsedDocs := make([]Document, 0, len(urls))
 	now := time.Now()
 	for i, u := range urls {
-		extURL := fmt.Sprint(u)
-		sdocID, err := SdocIDForURL(extURL)
-		if err != nil {
-			return nil, fmt.Errorf("%w: failed to compute SdocID for %s: %w", ErrValidation, extURL, err)
-		}
+		rawURL := fmt.Sprint(u)
 
 		docBody := make(map[string]any, len(parsed))
 		for key, vals := range parsed {
@@ -73,8 +69,26 @@ func (s *ParsingService) ParseSearchPage(ctx context.Context, doc Document) ([]D
 			}
 		}
 
-		buf := &bytes.Buffer{}
-		err = json.NewEncoder(buf).Encode(docBody)
+		extURL := rawURL
+		if parser.cnf.ExternalURLTemplate != "" {
+			extURL = RenderTemplate(parser.cnf.ExternalURLTemplate, docBody)
+		}
+
+		sdocID, err := SdocIDForURL(extURL)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"%w: failed to compute SdocID for %s (template=%s): %w",
+				ErrValidation, extURL, parser.cnf.ExternalURLTemplate, err,
+			)
+		}
+
+		contentURL := ""
+		if parser.cnf.ContentURLTemplate != "" {
+			contentURL = RenderTemplate(parser.cnf.ContentURLTemplate, docBody)
+		}
+
+		bodyBuf := &bytes.Buffer{}
+		err = json.NewEncoder(bodyBuf).Encode(docBody)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"failed to encode parsed snippet %s/%s: %w",
@@ -90,9 +104,10 @@ func (s *ParsingService) ParseSearchPage(ctx context.Context, doc Document) ([]D
 				SourceID:          doc.SourceID,
 				Type:              DocumentTypeSurfedAdvert,
 				ExternalURL:       extURL,
+				ContentURL:        contentURL,
 				UpdateIntervalSec: doc.UpdateIntervalSec,
 			},
-			Body: buf.Bytes(),
+			Body: bodyBuf.Bytes(),
 		}
 		parsedDocs = append(parsedDocs, parsedDoc)
 	}

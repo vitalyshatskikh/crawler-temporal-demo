@@ -14,3 +14,6 @@ class ParsingConfigORM(Base):
     doc_type: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text)
     name: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text)
     config: sa_orm.Mapped[dict[str, tp.Any]] = sa_orm.mapped_column(sa.JSON)
+    external_url_jmespath: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text, default="")
+    external_url_template: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text, default="")
+    content_url_template: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text, default="")

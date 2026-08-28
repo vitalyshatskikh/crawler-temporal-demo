@@ -34,6 +34,7 @@ pytest-cov = "^7.0.0"
 mypy = "^2.3.0"
 ruff = "^0.16.1"
 aioresponses = "^0.7.9"
+freezegun = "^1.5.5"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

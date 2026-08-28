@@ -1,6 +1,7 @@
 import contextlib
 import datetime as dt
 
+import freezegun
 import pytest
 from aioresponses import aioresponses
 
@@ -10,7 +11,11 @@ from downloader.tests._factories import DownloaderDocMetaFactory, DownloadParams
 from surfer.domain import adverts
 from surfer.domain.adverts import models as adverts_models
 
+_FREEZE_TS = dt.datetime(year=2021, month=1, day=1, tzinfo=dt.UTC)
+_FREEZE_TS_STR = dt.datetime.isoformat(_FREEZE_TS)
 
+
+@freezegun.freeze_time(_FREEZE_TS_STR)
 async def test_download_to_repo__when_response_2xx__then_saves_document_with_body() -> None:
     doc_repo = downloading.DummyDocumentRepository()
     activity = WebDownloader(doc_repo)
@@ -24,7 +29,13 @@ async def test_download_to_repo__when_response_2xx__then_saves_document_with_bod
 
     assert len(doc_repo.saved) == 1
     saved_doc = doc_repo.saved[0]
-    assert saved_doc == adverts.Document(**doc_meta.model_dump(), body="<html>hello world</html>")  # type: ignore[attr-defined]
+    assert saved_doc == adverts.Document(
+        **doc_meta.model_dump(exclude={'created_at', 'updated_at', 'type'}),  # type: ignore[attr-defined]
+        created_at=_FREEZE_TS,
+        updated_at=_FREEZE_TS,
+        type=adverts_models.DocumentType.DOWNLOADED_ADVERT,
+        body="<html>hello world</html>",
+    )
 
 
 async def test_download_to_repo__when_response_5xx__then_propagates_downloader_error() -> None:
@@ -85,6 +96,7 @@ async def test_download_to_repo__when_response_4xx_excluding_404__then_raises_va
     assert len(doc_repo.saved) == 0
 
 
+@freezegun.freeze_time(_FREEZE_TS_STR)
 async def test_download_to_repo__when_response_404__then_saves_document_with_body() -> None:
     doc_repo = downloading.DummyDocumentRepository()
     activity = WebDownloader(doc_repo)
@@ -98,9 +110,16 @@ async def test_download_to_repo__when_response_404__then_saves_document_with_bod
 
     assert len(doc_repo.saved) == 1
     saved_doc = doc_repo.saved[0]
-    assert saved_doc == adverts.Document(**doc_meta.model_dump(), body="Not Found")  # type: ignore[attr-defined]
+    assert saved_doc == adverts.Document(
+        **doc_meta.model_dump(exclude={'created_at', 'updated_at', 'type'}),  # type: ignore[attr-defined]
+        created_at=_FREEZE_TS,
+        updated_at=_FREEZE_TS,
+        type=adverts_models.DocumentType.DOWNLOADED_ADVERT,
+        body="Not Found",
+    )
 
 
+@freezegun.freeze_time(_FREEZE_TS_STR)
 async def test_download_to_repo__when_response_2xx__then_all_doc_meta_fields_preserved() -> None:
     doc_repo = downloading.DummyDocumentRepository()
     activity = WebDownloader(doc_repo)
@@ -123,4 +142,43 @@ async def test_download_to_repo__when_response_2xx__then_all_doc_meta_fields_pre
 
     assert len(doc_repo.saved) == 1
     saved = doc_repo.saved[0]
-    assert saved == adverts.Document(**doc_meta.model_dump(), body="<html>advert body</html>")
+    assert saved == adverts.Document(
+        **doc_meta.model_dump(exclude={'created_at', 'updated_at', 'type'}),
+        created_at=_FREEZE_TS,
+        updated_at=_FREEZE_TS,
+        type=adverts_models.DocumentType.DOWNLOADED_ADVERT,
+        body="<html>advert body</html>",
+    )
+
+
+@freezegun.freeze_time(_FREEZE_TS_STR)
+async def test_download_to_repo__when_content_url_set__then_fetches_from_content_url() -> None:
+    doc_repo = downloading.DummyDocumentRepository()
+    activity = WebDownloader(doc_repo)
+
+    doc_meta = adverts_models.DocumentMeta(
+        sdoc_id=adverts_models.SdocID("sdoc-cdn"),
+        created_at=dt.datetime(2024, 6, 1, tzinfo=dt.UTC),
+        updated_at=dt.datetime(2024, 6, 2, tzinfo=dt.UTC),
+        source_id=adverts.SourceID("source-y"),
+        type=adverts_models.DocumentType.DOWNLOADED_ADVERT,
+        external_url="https://origin.example.com/advert/99",
+        content_url="https://cdn.example.com/advert/99",
+        update_interval_sec=86400,
+    )
+    params = DownloadParamsFactory()
+
+    with aioresponses() as m:
+        m.get("https://cdn.example.com/advert/99", status=200, body="<html>from cdn</html>")
+        async with contextlib.aclosing(activity):
+            await activity.download_to_repo(params, doc_meta)  # type: ignore[arg-type]
+
+    assert len(doc_repo.saved) == 1
+    saved = doc_repo.saved[0]
+    assert saved == adverts.Document(
+        **doc_meta.model_dump(exclude={'created_at', 'updated_at', 'type'}),
+        created_at=_FREEZE_TS,
+        updated_at=_FREEZE_TS,
+        type=adverts_models.DocumentType.DOWNLOADED_ADVERT,
+        body="<html>from cdn</html>",
+    )

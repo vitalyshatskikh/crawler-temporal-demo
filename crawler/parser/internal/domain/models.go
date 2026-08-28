@@ -33,6 +33,7 @@ type DocumentMeta struct {
 	SourceID          SourceID     `json:"source_id"`
 	Type              DocumentType `json:"type"`
 	ExternalURL       string       `json:"external_url"`
+	ContentURL        string       `json:"content_url"`
 	UpdateIntervalSec int          `json:"update_interval_sec"`
 }
 

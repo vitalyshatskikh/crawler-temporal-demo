@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/vitalyshatskikh/go-lib/config"
 	"go.uber.org/zap"
 
@@ -18,30 +17,23 @@ import (
 )
 
 type siteJobCfg struct {
-	Base        *config.Config
+	config.Config
 	SiteBaseURL string        `env:"BASE_URL"`
 	Seller      seller.Config `env-prefix:"SELLER_"`
 }
 
 func main() {
-	baseCfg, err := config.Load()
+	cfg, err := config.LoadInto(&siteJobCfg{})
 	if err != nil {
-		log.Fatalf("failed to load base config: %v", err)
+		log.Fatalf("failed to load config: %v", err)
 	}
 
-	logger, err := observability.InitLogger(baseCfg)
+	logger, err := observability.InitLogger(&cfg.Config)
 	if err != nil {
 		log.Fatalf("failed to initialize logger: %v", err)
 	}
 
-	var jobCfg siteJobCfg
-	if err := cleanenv.ReadEnv(&jobCfg); err != nil {
-		log.Fatalf("failed to read job config: %v", err)
-	}
-
-	jobCfg.Base = baseCfg
-
-	err = run(&jobCfg, logger)
+	err = run(cfg, logger)
 	if err != nil {
 		logger.Error("service exited with errors", zap.Error(err))
 		_ = logger.Sync()

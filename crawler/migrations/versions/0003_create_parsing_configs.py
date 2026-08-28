@@ -24,6 +24,9 @@ def upgrade() -> None:
         sa.Column("doc_type", sa.Text(), nullable=False),
         sa.Column("name", sa.Text(), nullable=False),
         sa.Column("config", sa.JSON(), nullable=False, server_default="{}"),
+        sa.Column("external_url_jmespath", sa.Text(), nullable=False, server_default=""),
+        sa.Column("external_url_template", sa.Text(), nullable=False, server_default=""),
+        sa.Column("content_url_template", sa.Text(), nullable=False, server_default=""),
     )
     op.create_index("idx_parsing_configs_source_id", "parsing_configs", ["source_id"])
     op.create_unique_constraint(

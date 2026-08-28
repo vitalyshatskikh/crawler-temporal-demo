@@ -24,6 +24,7 @@ class PGDocumentRepository(downloading.IDocumentRepository):
                     "body": stmt.excluded.body,
                     "updated_at": stmt.excluded.updated_at,
                     "external_url": stmt.excluded.external_url,
+                    "content_url": stmt.excluded.content_url,
                     "doc_type": stmt.excluded.doc_type,
                     "source_id": stmt.excluded.source_id,
                     "update_interval_sec": stmt.excluded.update_interval_sec,

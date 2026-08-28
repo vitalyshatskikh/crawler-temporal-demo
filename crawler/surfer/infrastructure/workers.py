@@ -53,23 +53,3 @@ class AdvertsWorker(Worker):
 
     async def run(self) -> None:
         await self._w.run()
-
-
-# TODO move into separate app
-class ParsingWorker(Worker):
-    def __init__(
-        self,
-        client: temporalio.client.Client,
-    ) -> None:
-        self._w = temporalio.worker.Worker(
-            client=client,
-            task_queue=consts.QueueName.PARSING,
-            workflows=[],
-            activities=[
-                activities.dummy_parse_search_page,
-                activities.dummy_parse_advert_content,
-            ],
-        )
-
-    async def run(self) -> None:
-        await self._w.run()
