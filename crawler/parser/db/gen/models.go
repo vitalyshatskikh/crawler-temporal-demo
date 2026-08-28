@@ -13,6 +13,7 @@ type Document struct {
 	SourceID          string             `json:"source_id"`
 	DocType           string             `json:"doc_type"`
 	ExternalUrl       string             `json:"external_url"`
+	ContentUrl        string             `json:"content_url"`
 	Body              string             `json:"body"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
@@ -20,9 +21,12 @@ type Document struct {
 }
 
 type ParsingConfig struct {
-	ID       int64  `json:"id"`
-	SourceID string `json:"source_id"`
-	DocType  string `json:"doc_type"`
-	Name     string `json:"name"`
-	Config   []byte `json:"config"`
+	ID                  int64  `json:"id"`
+	SourceID            string `json:"source_id"`
+	DocType             string `json:"doc_type"`
+	Name                string `json:"name"`
+	Config              []byte `json:"config"`
+	ExternalUrlJmespath string `json:"external_url_jmespath"`
+	ExternalUrlTemplate string `json:"external_url_template"`
+	ContentUrlTemplate  string `json:"content_url_template"`
 }

@@ -7,6 +7,7 @@ tool github.com/sqlc-dev/sqlc/cmd/sqlc
 tool github.com/vektra/mockery/v3
 
 require (
+	github.com/cbroglie/mustache v1.4.0
 	github.com/go-faker/faker/v4 v4.11.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/jmespath/go-jmespath v0.4.0
@@ -123,7 +124,6 @@ require (
 	google.golang.org/grpc v1.82.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
 )

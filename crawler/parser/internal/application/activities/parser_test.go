@@ -58,6 +58,7 @@ func TestParser_ParseSearchPage_WhenInvalidMetaType_ThenErrValidation(t *testing
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSurfedAdvert,
 		ExternalURL:       "https://example.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -90,6 +91,7 @@ func TestParser_ParseSearchPage_WhenRepoGetFails_ThenWrappedError(t *testing.T) 
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       "https://search.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -142,6 +144,7 @@ func TestParser_ParseSearchPage_WhenServiceFails_ThenWrappedError(t *testing.T) 
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       "https://search.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -169,11 +172,10 @@ func TestParser_ParseSearchPage_WhenValid_ThenSavesAllAndReturnsMetas(t *testing
 		mock.Anything,
 		mock.Anything,
 	).Return(domain.ParsingConfig{
-		SourceID:     "src1",
-		DocumentType: domain.DocumentTypeSearchPage,
-		Params: []domain.ParsingParam{
-			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
-		},
+		SourceID:            "src1",
+		DocumentType:        domain.DocumentTypeSearchPage,
+		ExternalURLJMESPath: "urls",
+		Params:              []domain.ParsingParam{},
 	}, nil)
 
 	doc := domain.Document{
@@ -205,6 +207,7 @@ func TestParser_ParseSearchPage_WhenValid_ThenSavesAllAndReturnsMetas(t *testing
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       "https://search.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -229,11 +232,10 @@ func TestParser_ParseSearchPage_WhenEmptyURLs_ThenReturnsNonNilEmptySliceAndNoSa
 		mock.Anything,
 		mock.Anything,
 	).Return(domain.ParsingConfig{
-		SourceID:     "src1",
-		DocumentType: domain.DocumentTypeSearchPage,
-		Params: []domain.ParsingParam{
-			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
-		},
+		SourceID:            "src1",
+		DocumentType:        domain.DocumentTypeSearchPage,
+		ExternalURLJMESPath: "urls",
+		Params:              []domain.ParsingParam{},
 	}, nil)
 
 	doc := domain.Document{
@@ -260,6 +262,7 @@ func TestParser_ParseSearchPage_WhenEmptyURLs_ThenReturnsNonNilEmptySliceAndNoSa
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       "https://search.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -284,11 +287,10 @@ func TestParser_ParseSearchPage_WhenSaveFails_ThenReturnsErrorAndStops(t *testin
 		mock.Anything,
 		mock.Anything,
 	).Return(domain.ParsingConfig{
-		SourceID:     "src1",
-		DocumentType: domain.DocumentTypeSearchPage,
-		Params: []domain.ParsingParam{
-			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
-		},
+		SourceID:            "src1",
+		DocumentType:        domain.DocumentTypeSearchPage,
+		ExternalURLJMESPath: "urls",
+		Params:              []domain.ParsingParam{},
 	}, nil)
 
 	doc := domain.Document{
@@ -320,6 +322,7 @@ func TestParser_ParseSearchPage_WhenSaveFails_ThenReturnsErrorAndStops(t *testin
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       "https://search.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -345,6 +348,7 @@ func TestParser_ParseAdvertContent_WhenInvalidMetaType_ThenErrValidation(t *test
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       "https://example.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -376,6 +380,7 @@ func TestParser_ParseAdvertContent_WhenRepoGetFails_ThenWrappedError(t *testing.
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeDownloadedAdvert,
 		ExternalURL:       "https://example.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -427,6 +432,7 @@ func TestParser_ParseAdvertContent_WhenServiceFails_ThenWrappedError(t *testing.
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeDownloadedAdvert,
 		ExternalURL:       "https://example.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -489,6 +495,7 @@ func TestParser_ParseAdvertContent_WhenSaveFails_ThenWrappedError(t *testing.T) 
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeDownloadedAdvert,
 		ExternalURL:       "https://example.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -548,6 +555,7 @@ func TestParser_ParseAdvertContent_WhenValid_ThenSavesAndReturnsNil(t *testing.T
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeDownloadedAdvert,
 		ExternalURL:       "https://example.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -577,6 +585,7 @@ func TestParser_ParseSearchPage_WhenRepoGetFails_ThenRetryable(t *testing.T) {
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       "https://search.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -609,6 +618,7 @@ func TestParser_ParseAdvertContent_WhenRepoGetFails_ThenRetryable(t *testing.T) 
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeDownloadedAdvert,
 		ExternalURL:       "https://example.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -634,11 +644,10 @@ func TestParser_ParseSearchPage_WhenSaveFails_ThenRetryable(t *testing.T) {
 		mock.Anything,
 		mock.Anything,
 	).Return(domain.ParsingConfig{
-		SourceID:     "src1",
-		DocumentType: domain.DocumentTypeSearchPage,
-		Params: []domain.ParsingParam{
-			{Name: domain.PropExternalURL, JMESPath: "urls", Default: ""},
-		},
+		SourceID:            "src1",
+		DocumentType:        domain.DocumentTypeSearchPage,
+		ExternalURLJMESPath: "urls",
+		Params:              []domain.ParsingParam{},
 	}, nil)
 
 	doc := domain.Document{
@@ -670,6 +679,7 @@ func TestParser_ParseSearchPage_WhenSaveFails_ThenRetryable(t *testing.T) {
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       "https://search.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,
@@ -731,6 +741,7 @@ func TestParser_ParseAdvertContent_WhenSaveFails_ThenRetryable(t *testing.T) {
 		SourceID:          "src1",
 		Type:              domain.DocumentTypeDownloadedAdvert,
 		ExternalURL:       "https://example.com",
+		ContentURL:        "",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		UpdateIntervalSec: 86400,

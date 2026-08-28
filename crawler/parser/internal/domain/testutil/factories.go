@@ -24,6 +24,7 @@ func DocumentMetaFactory() domain.DocumentMeta {
 		SourceID:          SourceIDFactory(),
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       faker.URL(),
+		ContentURL:        "",
 		UpdateIntervalSec: 86400,
 	}
 }
@@ -37,6 +38,7 @@ func MustDocumentMeta(url string, sdocID domain.SdocID, sourceID domain.SourceID
 		SourceID:          sourceID,
 		Type:              domain.DocumentTypeSearchPage,
 		ExternalURL:       url,
+		ContentURL:        "",
 		UpdateIntervalSec: 86400,
 	}
 }
@@ -88,13 +90,12 @@ func MustAdvertConfig(sourceID domain.SourceID, params []domain.ParsingParam) do
 
 func ValidSearchPageConfigFactory() domain.ParsingConfig {
 	return domain.ParsingConfig{
-		ID:           1,
-		Name:         "search-config",
-		SourceID:     domain.SourceID(faker.Word()),
-		DocumentType: domain.DocumentTypeSearchPage,
-		Params: []domain.ParsingParam{
-			{Name: domain.PropExternalURL, JMESPath: "urls[*]", Default: ""},
-		},
+		ID:                  1,
+		Name:                "search-config",
+		SourceID:            domain.SourceID(faker.Word()),
+		DocumentType:        domain.DocumentTypeSearchPage,
+		ExternalURLJMESPath: "urls[*]",
+		Params:              []domain.ParsingParam{},
 	}
 }
 
@@ -104,8 +105,6 @@ func ValidAdvertConfigFactory() domain.ParsingConfig {
 		Name:         "advert-config",
 		SourceID:     domain.SourceID(faker.Word()),
 		DocumentType: domain.DocumentTypeDownloadedAdvert,
-		Params: []domain.ParsingParam{
-			{Name: domain.PropExternalURL, JMESPath: "url", Default: ""},
-		},
+		Params:       []domain.ParsingParam{},
 	}
 }

@@ -20,6 +20,7 @@ func MustSearchPageDocument(sourceID domain.SourceID, url string) domain.Documen
 			SourceID:          sourceID,
 			Type:              domain.DocumentTypeSearchPage,
 			ExternalURL:       url,
+			ContentURL:        "",
 			UpdateIntervalSec: 86400,
 		},
 		Body: []byte("{}"),
@@ -36,6 +37,7 @@ func MustDownloadedAdvertDocument(sourceID domain.SourceID, sdocID domain.SdocID
 			SourceID:          sourceID,
 			Type:              domain.DocumentTypeDownloadedAdvert,
 			ExternalURL:       url,
+			ContentURL:        "",
 			UpdateIntervalSec: 86400,
 		},
 		Body: []byte("{}"),
@@ -51,6 +53,7 @@ func MustSurfedAdvertMeta(sourceID domain.SourceID, sdocID domain.SdocID, url st
 		SourceID:          sourceID,
 		Type:              domain.DocumentTypeSurfedAdvert,
 		ExternalURL:       url,
+		ContentURL:        "",
 		UpdateIntervalSec: 86400,
 	}
 }

@@ -124,3 +124,29 @@ async def test_download_to_repo__when_response_2xx__then_all_doc_meta_fields_pre
     assert len(doc_repo.saved) == 1
     saved = doc_repo.saved[0]
     assert saved == adverts.Document(**doc_meta.model_dump(), body="<html>advert body</html>")
+
+
+async def test_download_to_repo__when_content_url_set__then_fetches_from_content_url() -> None:
+    doc_repo = downloading.DummyDocumentRepository()
+    activity = WebDownloader(doc_repo)
+
+    doc_meta = adverts_models.DocumentMeta(
+        sdoc_id=adverts_models.SdocID("sdoc-cdn"),
+        created_at=dt.datetime(2024, 6, 1, tzinfo=dt.UTC),
+        updated_at=dt.datetime(2024, 6, 2, tzinfo=dt.UTC),
+        source_id=adverts.SourceID("source-y"),
+        type=adverts_models.DocumentType.DOWNLOADED_ADVERT,
+        external_url="https://origin.example.com/advert/99",
+        content_url="https://cdn.example.com/advert/99",
+        update_interval_sec=86400,
+    )
+    params = DownloadParamsFactory()
+
+    with aioresponses() as m:
+        m.get("https://cdn.example.com/advert/99", status=200, body="<html>from cdn</html>")
+        async with contextlib.aclosing(activity):
+            await activity.download_to_repo(params, doc_meta)  # type: ignore[arg-type]
+
+    assert len(doc_repo.saved) == 1
+    saved = doc_repo.saved[0]
+    assert saved == adverts.Document(**doc_meta.model_dump(), body="<html>from cdn</html>")

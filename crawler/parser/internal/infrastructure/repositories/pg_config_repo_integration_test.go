@@ -23,6 +23,13 @@ func insertParsingConfig(t *testing.T, pool *pgxpool.Pool, sourceID, docType, na
 	require.NoError(t, err)
 }
 
+func insertParsingConfigWithURLFields(t *testing.T, pool *pgxpool.Pool, sourceID, docType, name string, paramsJSON, externalURLJMESPath, externalURLTemplate, contentURLTemplate string) {
+	_, err := pool.Exec(context.Background(),
+		`INSERT INTO parsing_configs (source_id, doc_type, name, config, external_url_jmespath, external_url_template, content_url_template) VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)`,
+		sourceID, docType, name, paramsJSON, externalURLJMESPath, externalURLTemplate, contentURLTemplate)
+	require.NoError(t, err)
+}
+
 func cleanupParsingConfig(t *testing.T, pool *pgxpool.Pool, sourceID, docType string) {
 	_, _ = pool.Exec(context.Background(),
 		`DELETE FROM parsing_configs WHERE source_id = $1 AND doc_type = $2`,
@@ -113,6 +120,29 @@ func TestPGConfigRepo_GetConfig_WhenEmptyParamsArray(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, cfg.Params)
 	assert.Empty(t, cfg.Params)
+}
+
+func TestPGConfigRepo_GetConfig_WhenURLFieldsSet_ThenRoundTrip(t *testing.T) {
+	params := []domain.ParsingParam{
+		{Name: "title", JMESPath: "titles", Default: ""},
+	}
+	paramsJSON, err := json.Marshal(params)
+	require.NoError(t, err)
+
+	insertParsingConfigWithURLFields(t, testutil.TestPool, "siteapi", "search_page", "url-fields-config", string(paramsJSON), "urls[*]", "{{_external_url}}?ref=search", "https://cdn.example.com{{_external_url}}")
+	defer cleanupParsingConfig(t, testutil.TestPool, "siteapi", "search_page")
+
+	repo := NewPGConfigRepo(testutil.TestPool)
+	cfg, err := repo.GetConfig(context.Background(), "siteapi", "search_page")
+
+	require.NoError(t, err)
+	assert.Equal(t, "url-fields-config", cfg.Name)
+	assert.Equal(t, domain.SourceID("siteapi"), cfg.SourceID)
+	assert.Equal(t, domain.DocumentType("search_page"), cfg.DocumentType)
+	assert.Equal(t, "urls[*]", cfg.ExternalURLJMESPath)
+	assert.Equal(t, "{{_external_url}}?ref=search", cfg.ExternalURLTemplate)
+	assert.Equal(t, "https://cdn.example.com{{_external_url}}", cfg.ContentURLTemplate)
+	assert.Equal(t, params, cfg.Params)
 }
 
 var _ = fmt.Sprint

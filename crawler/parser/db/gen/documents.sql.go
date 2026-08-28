@@ -12,7 +12,7 @@ import (
 )
 
 const getDocument = `-- name: GetDocument :one
-SELECT sdoc_id, source_id, doc_type, external_url, body, created_at, updated_at, update_interval_sec
+SELECT sdoc_id, source_id, doc_type, external_url, content_url, body, created_at, updated_at, update_interval_sec
 FROM documents
 WHERE sdoc_id = $1 AND source_id = $2 AND doc_type = $3
 `
@@ -31,6 +31,7 @@ func (q *Queries) GetDocument(ctx context.Context, arg GetDocumentParams) (Docum
 		&i.SourceID,
 		&i.DocType,
 		&i.ExternalUrl,
+		&i.ContentUrl,
 		&i.Body,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -40,10 +41,11 @@ func (q *Queries) GetDocument(ctx context.Context, arg GetDocumentParams) (Docum
 }
 
 const upsertDocument = `-- name: UpsertDocument :exec
-INSERT INTO documents (sdoc_id, source_id, doc_type, external_url, body, created_at, updated_at, update_interval_sec)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO documents (sdoc_id, source_id, doc_type, external_url, content_url, body, created_at, updated_at, update_interval_sec)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 ON CONFLICT (sdoc_id, source_id, doc_type) DO UPDATE SET
     external_url = EXCLUDED.external_url,
+    content_url = EXCLUDED.content_url,
     body = EXCLUDED.body,
     updated_at = EXCLUDED.updated_at,
     update_interval_sec = EXCLUDED.update_interval_sec
@@ -54,6 +56,7 @@ type UpsertDocumentParams struct {
 	SourceID          string             `json:"source_id"`
 	DocType           string             `json:"doc_type"`
 	ExternalUrl       string             `json:"external_url"`
+	ContentUrl        string             `json:"content_url"`
 	Body              string             `json:"body"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
@@ -66,6 +69,7 @@ func (q *Queries) UpsertDocument(ctx context.Context, arg UpsertDocumentParams) 
 		arg.SourceID,
 		arg.DocType,
 		arg.ExternalUrl,
+		arg.ContentUrl,
 		arg.Body,
 		arg.CreatedAt,
 		arg.UpdatedAt,

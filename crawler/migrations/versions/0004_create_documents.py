@@ -23,6 +23,7 @@ def upgrade() -> None:
         sa.Column("source_id", sa.Text(), nullable=False),
         sa.Column("doc_type", sa.Text(), nullable=False),
         sa.Column("external_url", sa.Text(), nullable=False),
+        sa.Column("content_url", sa.Text(), nullable=False, server_default=""),
         sa.Column("body", sa.Text(), nullable=False),
         sa.Column(
             "created_at",

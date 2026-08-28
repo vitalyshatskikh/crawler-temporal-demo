@@ -64,6 +64,7 @@ async def test_run__when_parse_returns_empty__then_no_advert_children(
         "source_id": in_.surf_params.source_id,  # type: ignore[attr-defined]
         "type": adverts_models.DocumentType.SEARCH_PAGE.value,
         "external_url": in_.page_url,
+        "content_url": "",
         "update_interval_sec": in_.surf_params.update_interval_sec,  # type: ignore[attr-defined]
     }
 
@@ -109,6 +110,7 @@ async def test_run__when_parse_returns_sdocs__then_starts_advert_children(
         "source_id": in_.surf_params.source_id,  # type: ignore[attr-defined]
         "type": adverts_models.DocumentType.SEARCH_PAGE.value,
         "external_url": in_.page_url,
+        "content_url": "",
         "update_interval_sec": in_.surf_params.update_interval_sec,  # type: ignore[attr-defined]
     }
 

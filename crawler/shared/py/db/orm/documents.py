@@ -14,6 +14,7 @@ class DocumentORM(Base):
     source_id: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text, primary_key=True)
     doc_type: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text, primary_key=True)
     external_url: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text)
+    content_url: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text, server_default=text(""))
     body: sa_orm.Mapped[str] = sa_orm.mapped_column(sa.Text)
     created_at: sa_orm.Mapped[dt.datetime] = sa_orm.mapped_column(sa.DateTime(timezone=True))
     updated_at: sa_orm.Mapped[dt.datetime] = sa_orm.mapped_column(sa.DateTime(timezone=True))

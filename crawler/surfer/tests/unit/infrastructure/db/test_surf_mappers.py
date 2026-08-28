@@ -55,6 +55,7 @@ class TestDocumentToMeta:
             source_id="test.com",
             doc_type="surfed_advert",
             external_url="https://test.com/abc123",
+            content_url="",
             body="<html>test</html>",
             created_at=now,
             updated_at=now,
@@ -65,6 +66,24 @@ class TestDocumentToMeta:
         assert result.sdoc_id == adverts.SdocID("abc123")
         assert result.source_id == adverts.SourceID("test.com")
         assert result.type == adverts.DocumentType.SURFED_ADVERT
+        assert result.content_url == ""
+
+    def test_document_to_meta__when_content_url_set__then_returns_content_url(self) -> None:
+        now = dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
+        row = shared_orm.DocumentORM(
+            sdoc_id="abc123",
+            source_id="test.com",
+            doc_type="surfed_advert",
+            external_url="https://test.com/abc123",
+            content_url="https://cdn.example.com/abc123",
+            body="<html>test</html>",
+            created_at=now,
+            updated_at=now,
+            update_interval_sec=86400,
+        )
+        result = shared_mappers.document_to_meta(row)
+        assert isinstance(result, adverts.DocumentMeta)
+        assert result.content_url == "https://cdn.example.com/abc123"
 
 
 class TestDocumentToOrm:
@@ -75,6 +94,7 @@ class TestDocumentToOrm:
             source_id=adverts.SourceID("test.com"),
             type=adverts.DocumentType.DOWNLOADED_ADVERT,
             external_url="https://test.com/xyz789",
+            content_url="",
             body="<html>downloaded</html>",
             created_at=now,
             updated_at=now,
@@ -84,3 +104,38 @@ class TestDocumentToOrm:
         assert result["sdoc_id"] == "xyz789"
         assert result["body"] == "<html>downloaded</html>"
         assert result["doc_type"] == "downloaded_advert"
+        assert result["content_url"] == ""
+
+    def test_document_to_orm__when_content_url_set__then_returns_content_url(self) -> None:
+        now = dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
+        doc = adverts.Document(
+            sdoc_id=adverts.SdocID("xyz789"),
+            source_id=adverts.SourceID("test.com"),
+            type=adverts.DocumentType.DOWNLOADED_ADVERT,
+            external_url="https://test.com/xyz789",
+            content_url="https://cdn.example.com/xyz789",
+            body="<html>downloaded</html>",
+            created_at=now,
+            updated_at=now,
+            update_interval_sec=86400,
+        )
+        result = shared_mappers.document_to_orm(doc)
+        assert result["content_url"] == "https://cdn.example.com/xyz789"
+
+    def test_document_to_meta__roundtrip__then_preserves_content_url(self) -> None:
+        now = dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
+        original_row = shared_orm.DocumentORM(
+            sdoc_id="roundtrip123",
+            source_id="test.com",
+            doc_type="surfed_advert",
+            external_url="https://test.com/abc",
+            content_url="https://cdn.example.com/abc",
+            body="<html>test</html>",
+            created_at=now,
+            updated_at=now,
+            update_interval_sec=86400,
+        )
+        meta = shared_mappers.document_to_meta(original_row)
+        assert meta.content_url == "https://cdn.example.com/abc"
+        orm_dict = shared_mappers.document_to_orm(adverts.Document(**meta.model_dump(), body="<html>test</html>"))
+        assert orm_dict["content_url"] == "https://cdn.example.com/abc"

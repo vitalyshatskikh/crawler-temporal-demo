@@ -40,6 +40,7 @@ class DownloaderDocMetaFactory(factory.Factory):
     external_url = factory.LazyAttribute(
         lambda o: f"https://example.com/advert/{o.sdoc_id}"
     )
+    content_url = ""
     update_interval_sec = 86400
 
 

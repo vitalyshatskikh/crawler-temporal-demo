@@ -22,8 +22,9 @@ class WebDownloader:
 
     @activity.defn(name=consts.ActivityName.DOWNLOAD_TO_REPO)
     async def download_to_repo(self, conf: downloading.Params, doc_meta: adverts.DocumentMeta) -> None:
+        actual_url = doc_meta.content_url or doc_meta.external_url
         async with self._http_client.get(
-            url=doc_meta.external_url,
+            url=actual_url,
             headers=conf.headers,
             raise_for_status=_raise_for_status,
         ) as response:
@@ -32,7 +33,7 @@ class WebDownloader:
         if response.status == http.HTTPStatus.NOT_FOUND:
             logger.info(
                 "page not found: url=%s sdoc_id=%s",
-                doc_meta.external_url,
+                actual_url,
                 doc_meta.sdoc_id,
             )
 

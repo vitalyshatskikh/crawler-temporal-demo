@@ -3,7 +3,10 @@ CREATE TABLE parsing_configs (
     source_id TEXT NOT NULL,
     doc_type TEXT NOT NULL,
     name TEXT NOT NULL,
-    config JSONB NOT NULL DEFAULT '{}'::jsonb
+    config JSONB NOT NULL DEFAULT '{}'::jsonb,
+    external_url_jmespath TEXT NOT NULL DEFAULT '',
+    external_url_template TEXT NOT NULL DEFAULT '',
+    content_url_template TEXT NOT NULL DEFAULT ''
 );
 
 CREATE INDEX idx_parsing_configs_source_id ON parsing_configs (source_id);
@@ -15,6 +18,7 @@ CREATE TABLE documents (
     source_id TEXT NOT NULL,
     doc_type TEXT NOT NULL,
     external_url TEXT NOT NULL,
+    content_url TEXT NOT NULL DEFAULT '',
     body TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,

@@ -18,9 +18,9 @@ import (
 
 func insertDocument(t *testing.T, pool *pgxpool.Pool, doc domain.Document) {
 	_, err := pool.Exec(context.Background(),
-		`INSERT INTO documents (sdoc_id, source_id, doc_type, external_url, body, created_at, updated_at, update_interval_sec)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		string(doc.SdocID), string(doc.SourceID), string(doc.Type), doc.ExternalURL, string(doc.Body),
+		`INSERT INTO documents (sdoc_id, source_id, doc_type, external_url, content_url, body, created_at, updated_at, update_interval_sec)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		string(doc.SdocID), string(doc.SourceID), string(doc.Type), doc.ExternalURL, doc.ContentURL, string(doc.Body),
 		pgtype.Timestamptz{Time: doc.CreatedAt, Valid: true},
 		pgtype.Timestamptz{Time: doc.UpdatedAt, Valid: true},
 		doc.UpdateIntervalSec)

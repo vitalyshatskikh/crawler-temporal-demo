@@ -41,10 +41,13 @@ func (r *PGConfigRepo) GetConfig(ctx context.Context, sourceID domain.SourceID, 
 	}
 
 	return domain.ParsingConfig{
-		ID:           int(row.ID),
-		Name:         row.Name,
-		SourceID:     domain.SourceID(row.SourceID),
-		DocumentType: domain.DocumentType(row.DocType),
-		Params:       params,
+		ID:                  int(row.ID),
+		Name:                row.Name,
+		SourceID:            domain.SourceID(row.SourceID),
+		DocumentType:        domain.DocumentType(row.DocType),
+		ExternalURLJMESPath: row.ExternalUrlJmespath,
+		ExternalURLTemplate: row.ExternalUrlTemplate,
+		ContentURLTemplate:  row.ContentUrlTemplate,
+		Params:              params,
 	}, nil
 }
