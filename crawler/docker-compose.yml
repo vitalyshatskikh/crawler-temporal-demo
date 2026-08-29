@@ -5,12 +5,16 @@ x-common-env: &common_env
   POSTGRES__PASSWORD: postgres
   POSTGRES__DATABASE: crawler
   POSTGRES__SSLMODE: disable
+  TEMPORAL__HOST: temporal:7233
+  TEMPORAL__NAMESPACE: crawler
   # go '_' delim
   POSTGRES_HOSTS: postgres:5432
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   POSTGRES_DATABASE: crawler
   POSTGRES_SSLMODE: disable
+  TEMPORAL_HOST: temporal:7233
+  TEMPORAL_NAMESPACE: crawler
 
 services:
   postgres:
@@ -45,10 +49,60 @@ services:
     networks: [crawler-network]
     restart: "no"
 
+  surfer:
+    build:
+      context: .
+      dockerfile: Dockerfile.surfer
+    image: crawler-surfer:latest
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment: *common_env
+    networks:
+      - crawler-network
+      - temporal-network
+
+  downloader:
+    build:
+      context: .
+      dockerfile: Dockerfile.surfer
+    image: crawler-surfer:latest
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment: *common_env
+    networks:
+      - crawler-network
+      - temporal-network
+      - example-site-network
+    command: ["python", "-m", "downloader"]
+
+  parser:
+    build:
+      context: .
+      dockerfile: Dockerfile.parser
+    image: crawler-parser:latest
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment: *common_env
+    networks:
+      - crawler-network
+      - temporal-network
+
 networks:
   crawler-network:
     driver: bridge
     name: crawler-network
+  temporal-network:
+    external: true
+    name: temporal-network
+  example-site-network:
+    external: true
+    name: example-site-network
 
 volumes:
   postgres-data:

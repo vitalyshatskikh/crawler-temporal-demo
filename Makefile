@@ -138,9 +138,12 @@ run-downloader:
 # ----------
 # Crawler all services
 
-.PHONY: crawler crawler-down
+.PHONY: crawler crawler-ps crawler-down
 crawler:
 	cd crawler && $(DOCKER_COMPOSE) up -d --build && $(DOCKER_COMPOSE) ps
+
+crawler-ps:
+	cd crawler  && $(DOCKER_COMPOSE) ps
 
 crawler-down:
 	cd crawler && $(DOCKER_COMPOSE) down -v

@@ -28,6 +28,18 @@ def upgrade() -> None:
 
     rows = [
         {
+            "source_id": "siteapi-local",
+            "doc_type": "search_page",
+            "name": "siteapi-search",
+            "headers": {"X-Demo": "demo"},
+        },
+        {
+            "source_id": "siteapi-local",
+            "doc_type": "surfed_advert",
+            "name": "siteapi-advert",
+            "headers": {"X-Demo": "demo"},
+        },
+        {
             "source_id": "siteapi",
             "doc_type": "search_page",
             "name": "siteapi-search",
