@@ -1,5 +1,7 @@
 # AGENTS.md
 
+This file provides guidance to agents when working with code in this repository.
+
 ## ! Important !
 
 **Never** mention agent's name, model and vendor in commit messages or generated code or any other materials
@@ -55,22 +57,25 @@ domain/
 
 application/
 ├── config.py              # DownloaderConfig (timeouts, retry, aiohttp settings)
-├── consts.py              # ActivityName enum
+├── consts.py             # ActivityName enum
 ├── activities/
 │   ├── downloading_repo.py  # DownloadingRepo (GetDownloadingConfig activity)
-│   └── web_downloader.py    # WebDownloader (DownloadToRepo activity, aiohttp)
+│   └── web_downloader.py   # WebDownloader (DownloadToRepo activity, aiohttp)
 └── workflows/
     ├── download_search_page.py    # DownloadSearchPage workflow
     └── download_advert_content.py # DownloadAdvertContent workflow
 
 infrastructure/
-├── workers.py             # DownloadingWorker (Temporal worker bootstrap)
-└── repositories/
-    ├── config_repo.py     # PGDownloadingRepository (TODO: implement)
-    └── document_repo.py  # PGDocumentRepository (TODO: implement)
+├── db/                   # SQLAlchemy ORM mappers and model registry
+├── repositories/
+│   ├── config_repo.py     # PGDownloadingRepository (ISurfingRepository impl)
+│   └── document_repo.py  # PGDocumentRepository (IDocumentRepository impl)
+└── workers.py            # DownloadingWorker (Temporal worker bootstrap)
+
+__main__.py               # Entry point: connect Temporal → run DownloadingWorker
 ```
 
-**Cross-package dependency:** Downloader imports from `surfer.domain.adverts` (SourceID, DocumentType, Document, DocumentMeta) and `surfer.application.consts` (QueueName, WorkflowName). This is intentional — surfer is the main package defining the interface between components.
+**Cross-package dependency:** Downloader imports from `surfer.domain.adverts` (`SourceID`, `DocumentType`, `Document`, `DocumentMeta`) and `surfer.application.consts` (`QueueName`, `WorkflowName`). This is intentional — surfer is the main package defining the interface between components.
 
 ---
 
@@ -161,6 +166,36 @@ from surfer.domain import adverts
 | `http_connect_timeout` | 10 s | aiohttp connect timeout |
 | `http_connector_limit` | 100 | Max concurrent connections |
 | `http_proxy` | None | Optional HTTP proxy URL |
+
+---
+
+## Cross-package Sync Contract
+
+The downloader depends on types and constants defined in `surfer`. Changes to those shared definitions must be propagated to `crawler/parser` as well.
+
+### Types imported from `surfer.domain.adverts`
+
+| Type | Used for | Notes |
+|---|---|---|
+| `SourceID` | `Params.source_id`, `DocumentMeta.source_id` | Identifies a scraping source |
+| `DocumentType` | `Params.doc_type`, `DocumentMeta.type` | Values: `search_page`, `surfed_advert`, `downloaded_advert`, `parsed_advert` |
+| `Document` | Return type of `WebDownloader.download_to_repo` | `DocumentMeta` + body str |
+| `DocumentMeta` | Activity input (`DownloadSearchPageIn`, `DownloadAdvertContentIn`) | Common metadata across all document stages |
+
+### Constants imported from `surfer.application.consts`
+
+| Constant | Used for | Notes |
+|---|---|---|
+| `QueueName.DOWNLOADING` | Task queue for downloader worker | `"downloading"` |
+| `WorkflowName.DOWNLOAD_SEARCH_PAGE` | Child workflow name | `"DownloadSearchPage"` |
+| `WorkflowName.DOWNLOAD_ADVERT_CONTENT` | Child workflow name | `"DownloadAdvertContent"` |
+
+### DocumentMeta field semantics (shared with surfer)
+- `external_url` — canonical URL used as **identity** (stable across re-downloads)
+- `content_url` — URL to **fetch body from** (may differ from external_url)
+- `update_interval_sec` — advisory crawl interval
+
+When changing `surfer.domain.adverts` or `surfer.application.consts`, update `crawler/parser` in the **same commit**.
 
 ---
 
