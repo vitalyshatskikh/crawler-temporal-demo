@@ -32,7 +32,7 @@ def upgrade() -> None:
     rows = [
         {
             "name": "siteapi-local-debug",
-            "source_id": "siteapi",
+            "source_id": "siteapi-local",
             "url_template": "http://localhost:8090/adverts/{{region}}/search?page={{page}}",
             "url_template_params": [
                 {"values": {"region": "moscow"}, "comment": "moscow"},
